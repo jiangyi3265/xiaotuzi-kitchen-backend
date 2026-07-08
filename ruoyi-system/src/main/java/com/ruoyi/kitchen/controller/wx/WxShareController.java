@@ -15,6 +15,7 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenSharePost;
+import com.ruoyi.kitchen.mapper.KitchenPostLikeMapper;
 import com.ruoyi.kitchen.service.IKitchenSharePostService;
 import com.ruoyi.kitchen.util.WxPageUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
@@ -32,10 +33,13 @@ public class WxShareController
     private IKitchenSharePostService shareService;
 
     @Autowired
+    private KitchenPostLikeMapper kitchenPostLikeMapper;
+
+    @Autowired
     private WxTokenService wxTokenService;
 
     /** 发布是否需要审核：1 需要(默认待审核) 0 不需要(直接通过) */
-    @Value("${wx.shareAudit:1}")
+    @Value("${wx.shareAudit:0}")
     private String shareAudit;
 
     /**
@@ -43,11 +47,19 @@ public class WxShareController
      */
     @Anonymous
     @GetMapping("/list")
-    public TableDataInfo list(KitchenSharePost query)
+    public TableDataInfo list(KitchenSharePost query, HttpServletRequest request)
     {
         query.setAuditStatus("1");
         WxPageUtils.startPage();
         List<KitchenSharePost> list = shareService.selectKitchenSharePostList(query);
+        Long userId = wxTokenService.getUserId(request);
+        if (userId != null)
+        {
+            for (KitchenSharePost post : list)
+            {
+                post.setLiked(kitchenPostLikeMapper.countLike(post.getId(), userId) > 0);
+            }
+        }
         return WxPageUtils.getDataTable(list);
     }
 
@@ -66,7 +78,8 @@ public class WxShareController
         post.setWxUserId(userId);
         post.setAuditStatus("1".equals(shareAudit) ? "0" : "1");
         shareService.insertKitchenSharePost(post);
-        return AjaxResult.success("1".equals(shareAudit) ? "发布成功，审核通过后展示" : "发布成功");
+        post.setLiked(false);
+        return AjaxResult.success("1".equals(shareAudit) ? "发布成功，审核通过后展示" : "发布成功", post);
     }
 
     /**

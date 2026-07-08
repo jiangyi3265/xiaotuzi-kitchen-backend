@@ -34,7 +34,7 @@ public class WxCommentController
     private WxTokenService wxTokenService;
 
     /** 评论是否需要审核：1 需要(默认待审核) 0 不需要(直接通过) */
-    @Value("${wx.shareAudit:1}")
+    @Value("${wx.shareAudit:0}")
     private String shareAudit;
 
     /**
@@ -72,6 +72,8 @@ public class WxCommentController
         AjaxResult ajax = AjaxResult.success("1".equals(shareAudit) ? "评论成功，审核通过后展示" : "评论成功");
         java.util.Map<String, Object> data = new java.util.HashMap<>();
         data.put("status", comment.getAuditStatus());
+        data.put("commentId", comment.getId());
+        data.put("comment", comment);
         ajax.put("data", data);
         return ajax;
     }

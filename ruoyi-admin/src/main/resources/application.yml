@@ -144,5 +144,5 @@ wx:
   # 开发模式：true 时若未配置 appid/secret，用 code 直接当 openid 便于本地联调。
   # 生产必须设为 false（WX_DEV_MODE=false），否则存在冒充任意用户的风险。
   devMode: ${WX_DEV_MODE:true}
-  # 分享广场发布是否需要审核：1 需要(默认待审核) 0 直接通过
-  shareAudit: "1"
+  # 分享广场发布/评论是否需要审核：1 需要(待审核) 0 直接通过
+  shareAudit: ${WX_SHARE_AUDIT:0}

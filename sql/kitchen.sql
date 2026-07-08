@@ -197,7 +197,7 @@ CREATE TABLE `kitchen_order` (
   `receiver_address` varchar(255) DEFAULT ''                COMMENT '收货地址',
   `total_count`     int(11)       DEFAULT 0                 COMMENT '商品总件数',
   `total_amount`    decimal(10,2) DEFAULT 0                 COMMENT '订单金额',
-  `order_status`    char(1)       DEFAULT '0'               COMMENT '订单状态(0待处理 1已接单 2制作中 3已完成 4已取消)',
+  `order_status`    char(1)       DEFAULT '0'               COMMENT '订单状态(0待处理 1已接单 2制作中 3已完成 4已取消 5申请退款)',
   `pay_status`      char(1)       DEFAULT '0'               COMMENT '支付状态(0未支付 1已支付)',
   `share_flag`      char(1)       DEFAULT '0'               COMMENT '是否分享成品(0否 1是)',
   `create_by`    varchar(64)  DEFAULT ''                   COMMENT '创建者',
@@ -375,6 +375,7 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, list_cl
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, list_class, is_default, status, create_by, create_time) VALUES (3, '制作中', '2', 'kitchen_order_status', 'warning', 'N', '0', 'admin', sysdate());
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, list_class, is_default, status, create_by, create_time) VALUES (4, '已完成', '3', 'kitchen_order_status', 'success', 'N', '0', 'admin', sysdate());
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, list_class, is_default, status, create_by, create_time) VALUES (5, '已取消', '4', 'kitchen_order_status', 'danger',  'N', '0', 'admin', sysdate());
+INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, list_class, is_default, status, create_by, create_time) VALUES (6, '申请退款', '5', 'kitchen_order_status', 'warning', 'N', '0', 'admin', sysdate());
 
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, list_class, is_default, status, create_by, create_time) VALUES (1, '未支付', '0', 'kitchen_pay_status', 'danger',  'Y', '0', 'admin', sysdate());
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, list_class, is_default, status, create_by, create_time) VALUES (2, '已支付', '1', 'kitchen_pay_status', 'success', 'N', '0', 'admin', sysdate());

@@ -69,8 +69,8 @@ public class KitchenOrder extends BaseEntity
     @Excel(name = "订单金额")
     private BigDecimal totalAmount;
 
-    /** 订单状态(0待处理 1已接单 2制作中 3已完成 4已取消) */
-    @Excel(name = "订单状态", readConverterExp = "0=待处理,1=已接单,2=制作中,3=已完成,4=已取消")
+    /** 订单状态(0待处理 1已接单 2制作中 3已完成 4已取消 5申请退款) */
+    @Excel(name = "订单状态", readConverterExp = "0=待处理,1=已接单,2=制作中,3=已完成,4=已取消,5=申请退款")
     private String orderStatus;
 
     /** 支付状态(0未支付 1已支付) */

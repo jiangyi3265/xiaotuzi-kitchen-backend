@@ -52,6 +52,9 @@ public class KitchenSharePost extends BaseEntity
     @Excel(name = "审核状态", readConverterExp = "0=待审核,1=通过,2=驳回")
     private String auditStatus;
 
+    /** 当前用户是否已点赞（非DB字段） */
+    private Boolean liked;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -84,4 +87,7 @@ public class KitchenSharePost extends BaseEntity
 
     public String getAuditStatus() { return auditStatus; }
     public void setAuditStatus(String auditStatus) { this.auditStatus = auditStatus; }
+
+    public Boolean getLiked() { return liked; }
+    public void setLiked(Boolean liked) { this.liked = liked; }
 }

@@ -182,6 +182,33 @@ public class KitchenOrderServiceImpl implements IKitchenOrderService
     }
 
     @Override
+    public KitchenOrder applyRefund(Long id, Long wxUserId, String reason)
+    {
+        KitchenOrder order = selectKitchenOrderById(id);
+        if (order == null || !wxUserId.equals(order.getWxUserId()))
+        {
+            throw new ServiceException("订单不存在");
+        }
+        String status = order.getOrderStatus();
+        if ("4".equals(status))
+        {
+            throw new ServiceException("已取消订单不能申请退款");
+        }
+        if ("5".equals(status))
+        {
+            return order;
+        }
+        KitchenOrder update = new KitchenOrder();
+        update.setId(id);
+        update.setOrderStatus("5");
+        String refundReason = StringUtils.isBlank(reason) ? "用户申请退款" : "用户申请退款：" + reason.trim();
+        String oldRemark = StringUtils.isBlank(order.getRemark()) ? "" : order.getRemark().trim() + "\n";
+        update.setRemark(oldRemark + refundReason);
+        kitchenOrderMapper.updateKitchenOrder(update);
+        return selectKitchenOrderById(id);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteKitchenOrderByIds(Long[] ids)
     {

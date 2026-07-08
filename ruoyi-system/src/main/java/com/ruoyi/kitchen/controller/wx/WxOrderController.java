@@ -1,6 +1,7 @@
 package com.ruoyi.kitchen.controller.wx;
 
 import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -77,5 +78,19 @@ public class WxOrderController
             return AjaxResult.error("订单不存在");
         }
         return AjaxResult.success(order);
+    }
+
+    /**
+     * 小程序：申请退款（仅本人订单）
+     */
+    @Anonymous
+    @PostMapping("/refund/{id}")
+    public AjaxResult refund(@PathVariable("id") Long id, @RequestBody(required = false) Map<String, String> body,
+            HttpServletRequest request)
+    {
+        Long userId = wxTokenService.getRequiredUserId(request);
+        String reason = body == null ? "" : body.get("reason");
+        KitchenOrder order = kitchenOrderService.applyRefund(id, userId, reason);
+        return AjaxResult.success("退款申请已提交", order);
     }
 }

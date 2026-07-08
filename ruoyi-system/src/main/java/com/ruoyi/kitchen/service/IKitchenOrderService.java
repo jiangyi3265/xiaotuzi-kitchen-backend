@@ -38,6 +38,11 @@ public interface IKitchenOrderService
     public int changeOrderStatus(Long id, String orderStatus);
 
     /**
+     * 小程序：用户申请退款
+     */
+    public KitchenOrder applyRefund(Long id, Long wxUserId, String reason);
+
+    /**
      * 批量删除订单（级联删除明细）
      */
     public int deleteKitchenOrderByIds(Long[] ids);
