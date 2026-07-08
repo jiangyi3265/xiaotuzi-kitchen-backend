@@ -42,33 +42,28 @@ jobs:
 
           PORT="${SERVER_PORT:-22}"
           DEPLOY_PATH="${SERVER_DEPLOY_PATH:-/opt/xiaotuzi-kitchen/current}"
-          REPO_URL="https://github.com/${GITHUB_REPOSITORY}.git"
+          ARCHIVE_NAME="xiaotuzi-backend-${GITHUB_SHA}.tgz"
 
           mkdir -p ~/.ssh
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/xiaotuzi_deploy_key
           chmod 600 ~/.ssh/xiaotuzi_deploy_key
           ssh-keyscan -p "$PORT" -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+          tar \
+            --exclude='.git' \
+            --exclude='target' \
+            --exclude='*/target' \
+            -czf "/tmp/$ARCHIVE_NAME" .
+          scp -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "/tmp/$ARCHIVE_NAME" "$SERVER_USER@$SERVER_HOST:/tmp/$ARCHIVE_NAME"
 
           ssh -i ~/.ssh/xiaotuzi_deploy_key -p "$PORT" "$SERVER_USER@$SERVER_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' REPO_URL='$REPO_URL' bash -s" <<'EOF'
+            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' bash -s" <<'EOF'
           set -euo pipefail
 
-          retry() {
-            for i in 1 2 3; do
-              "$@" && return 0
-              sleep $((i * 5))
-            done
-            "$@"
-          }
-
           TARGET_DIR="$DEPLOY_PATH/RuoYi-Vue"
-          if [ -d "$TARGET_DIR/.git" ]; then
-            retry git -C "$TARGET_DIR" fetch --prune origin main
-            git -C "$TARGET_DIR" reset --hard origin/main
-          else
-            rm -rf "$TARGET_DIR"
-            retry git clone --branch main --depth 1 "$REPO_URL" "$TARGET_DIR"
-          fi
+          rm -rf "$TARGET_DIR"
+          mkdir -p "$TARGET_DIR"
+          tar -xzf "/tmp/$ARCHIVE_NAME" -C "$TARGET_DIR"
+          rm -f "/tmp/$ARCHIVE_NAME"
 
           cd "$DEPLOY_PATH"
 
