@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenRiderMapper">
+
+    <resultMap type="KitchenRider" id="KitchenRiderResult">
+        <id     property="id"          column="id"           />
+        <result property="riderName"   column="rider_name"   />
+        <result property="avatar"      column="avatar"       />
+        <result property="tag"         column="tag"          />
+        <result property="intro"       column="intro"        />
+        <result property="deliveryFee" column="delivery_fee" />
+        <result property="estTime"     column="est_time"     />
+        <result property="status"      column="status"       />
+        <result property="orderNum"    column="order_num"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"  column="update_time"  />
+        <result property="remark"      column="remark"       />
+    </resultMap>
+
+    <sql id="selectKitchenRiderVo">
+        select id, rider_name, avatar, tag, intro, delivery_fee, est_time, status, order_num,
+               create_by, create_time, update_by, update_time, remark
+        from kitchen_rider
+    </sql>
+
+    <select id="selectKitchenRiderList" parameterType="KitchenRider" resultMap="KitchenRiderResult">
+        <include refid="selectKitchenRiderVo"/>
+        <where>
+            del_flag = '0'
+            <if test="riderName != null and riderName != ''"> AND rider_name like concat('%', #{riderName}, '%')</if>
+            <if test="tag != null and tag != ''">             AND tag like concat('%', #{tag}, '%')</if>
+            <if test="status != null and status != ''">       AND status = #{status}</if>
+        </where>
+        order by order_num, id
+    </select>
+
+    <select id="selectKitchenRiderById" parameterType="Long" resultMap="KitchenRiderResult">
+        <include refid="selectKitchenRiderVo"/>
+        where id = #{id} and del_flag = '0'
+    </select>
+
+    <insert id="insertKitchenRider" parameterType="KitchenRider" useGeneratedKeys="true" keyProperty="id">
+        insert into kitchen_rider
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="riderName != null and riderName != ''">rider_name,</if>
+            <if test="avatar != null">avatar,</if>
+            <if test="tag != null">tag,</if>
+            <if test="intro != null">intro,</if>
+            <if test="deliveryFee != null">delivery_fee,</if>
+            <if test="estTime != null">est_time,</if>
+            <if test="status != null">status,</if>
+            <if test="orderNum != null">order_num,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="riderName != null and riderName != ''">#{riderName},</if>
+            <if test="avatar != null">#{avatar},</if>
+            <if test="tag != null">#{tag},</if>
+            <if test="intro != null">#{intro},</if>
+            <if test="deliveryFee != null">#{deliveryFee},</if>
+            <if test="estTime != null">#{estTime},</if>
+            <if test="status != null">#{status},</if>
+            <if test="orderNum != null">#{orderNum},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            sysdate()
+        </trim>
+    </insert>
+
+    <update id="updateKitchenRider" parameterType="KitchenRider">
+        update kitchen_rider
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="riderName != null and riderName != ''">rider_name = #{riderName},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="tag != null">tag = #{tag},</if>
+            <if test="intro != null">intro = #{intro},</if>
+            <if test="deliveryFee != null">delivery_fee = #{deliveryFee},</if>
+            <if test="estTime != null">est_time = #{estTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="deleteKitchenRiderById" parameterType="Long">
+        update kitchen_rider set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteKitchenRiderByIds" parameterType="String">
+        update kitchen_rider set del_flag = '2' where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+</mapper>

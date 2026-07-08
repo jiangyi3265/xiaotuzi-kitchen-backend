@@ -1,0 +1,35 @@
+# ============================================================================
+# 生产环境覆盖配置
+# 启用方式：--spring.profiles.active=druid,prod（druid 提供数据源，prod 收紧安全项）
+# 敏感项仍需通过环境变量注入：JWT_SECRET / MYSQL_PASSWORD / REDIS_PASSWORD /
+#   DRUID_PASSWORD / DRUID_ALLOW / WX_APPID / WX_SECRET / WX_DEV_MODE=false
+# ============================================================================
+
+# 生产日志级别：关闭 debug，避免打印敏感 SQL/参数
+logging:
+  level:
+    com.ruoyi: info
+    org.springframework: warn
+
+spring:
+  # 生产关闭热部署
+  devtools:
+    restart:
+      enabled: false
+  # 数据源：Druid 监控台默认关闭（如需开启用 DRUID_STAT_ENABLED=true 并配 DRUID_ALLOW 白名单+强口令）
+  datasource:
+    druid:
+      statViewServlet:
+        enabled: ${DRUID_STAT_ENABLED:false}
+
+# 生产关闭 Swagger 文档
+swagger:
+  enabled: ${SWAGGER_ENABLED:false}
+
+# 微信小程序：生产强制关闭开发模式（禁止 code 即 openid 的伪登录）
+wx:
+  devMode: ${WX_DEV_MODE:false}
+
+# 上传目录（Linux）
+ruoyi:
+  profile: ${RUOYI_PROFILE:/home/ruoyi/uploadPath}

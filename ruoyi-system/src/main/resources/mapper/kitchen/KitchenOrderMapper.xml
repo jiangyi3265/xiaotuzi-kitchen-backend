@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenOrderMapper">
+
+    <resultMap type="KitchenOrder" id="KitchenOrderResult">
+        <id     property="id"              column="id"               />
+        <result property="orderNo"         column="order_no"         />
+        <result property="wxUserId"        column="wx_user_id"       />
+        <result property="userNickname"    column="user_nickname"    />
+        <result property="serviceType"     column="service_type"     />
+        <result property="chefId"          column="chef_id"          />
+        <result property="chefName"        column="chef_name"        />
+        <result property="riderId"         column="rider_id"         />
+        <result property="riderName"       column="rider_name"       />
+        <result property="receiverName"    column="receiver_name"    />
+        <result property="receiverPhone"   column="receiver_phone"   />
+        <result property="receiverAddress" column="receiver_address" />
+        <result property="totalCount"      column="total_count"      />
+        <result property="totalAmount"     column="total_amount"     />
+        <result property="orderStatus"     column="order_status"     />
+        <result property="payStatus"       column="pay_status"       />
+        <result property="shareFlag"       column="share_flag"       />
+        <result property="createBy"        column="create_by"        />
+        <result property="createTime"      column="create_time"      />
+        <result property="updateBy"        column="update_by"        />
+        <result property="updateTime"      column="update_time"      />
+        <result property="remark"          column="remark"           />
+    </resultMap>
+
+    <resultMap type="KitchenOrderItem" id="KitchenOrderItemResult">
+        <id     property="id"        column="id"         />
+        <result property="orderId"   column="order_id"   />
+        <result property="dishId"    column="dish_id"    />
+        <result property="dishName"  column="dish_name"  />
+        <result property="dishCover" column="dish_cover" />
+        <result property="specJson"  column="spec_json"  />
+        <result property="quantity"  column="quantity"   />
+        <result property="price"     column="price"      />
+    </resultMap>
+
+    <sql id="selectKitchenOrderVo">
+        select o.id, o.order_no, o.wx_user_id, u.nickname as user_nickname, o.service_type,
+               o.chef_id, c.chef_name, o.rider_id, r.rider_name, o.receiver_name, o.receiver_phone, o.receiver_address,
+               o.total_count, o.total_amount, o.order_status, o.pay_status, o.share_flag,
+               o.create_by, o.create_time, o.update_by, o.update_time, o.remark
+        from kitchen_order o
+        left join kitchen_wx_user u on u.id = o.wx_user_id
+        left join kitchen_chef c on c.id = o.chef_id
+        left join kitchen_rider r on r.id = o.rider_id
+    </sql>
+
+    <select id="selectKitchenOrderList" parameterType="KitchenOrder" resultMap="KitchenOrderResult">
+        <include refid="selectKitchenOrderVo"/>
+        <where>
+            o.del_flag = '0'
+            <if test="orderNo != null and orderNo != ''">       AND o.order_no like concat('%', #{orderNo}, '%')</if>
+            <if test="wxUserId != null">                         AND o.wx_user_id = #{wxUserId}</if>
+            <if test="serviceType != null and serviceType != ''">AND o.service_type = #{serviceType}</if>
+            <if test="orderStatus != null and orderStatus != ''">AND o.order_status = #{orderStatus}</if>
+            <if test="payStatus != null and payStatus != ''">    AND o.pay_status = #{payStatus}</if>
+            <if test="receiverPhone != null and receiverPhone != ''">AND o.receiver_phone = #{receiverPhone}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND date_format(o.create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND date_format(o.create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+            </if>
+        </where>
+        order by o.id desc
+    </select>
+
+    <select id="selectKitchenOrderById" parameterType="Long" resultMap="KitchenOrderResult">
+        <include refid="selectKitchenOrderVo"/>
+        where o.id = #{id} and o.del_flag = '0'
+    </select>
+
+    <select id="selectItemsByOrderId" parameterType="Long" resultMap="KitchenOrderItemResult">
+        select id, order_id, dish_id, dish_name, dish_cover, spec_json, quantity, price
+        from kitchen_order_item where order_id = #{orderId}
+    </select>
+
+    <insert id="insertKitchenOrder" parameterType="KitchenOrder" useGeneratedKeys="true" keyProperty="id">
+        insert into kitchen_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            order_no,
+            <if test="wxUserId != null">wx_user_id,</if>
+            <if test="serviceType != null">service_type,</if>
+            <if test="chefId != null">chef_id,</if>
+            <if test="riderId != null">rider_id,</if>
+            <if test="receiverName != null">receiver_name,</if>
+            <if test="receiverPhone != null">receiver_phone,</if>
+            <if test="receiverAddress != null">receiver_address,</if>
+            <if test="totalCount != null">total_count,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="orderStatus != null">order_status,</if>
+            <if test="payStatus != null">pay_status,</if>
+            <if test="shareFlag != null">share_flag,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            #{orderNo},
+            <if test="wxUserId != null">#{wxUserId},</if>
+            <if test="serviceType != null">#{serviceType},</if>
+            <if test="chefId != null">#{chefId},</if>
+            <if test="riderId != null">#{riderId},</if>
+            <if test="receiverName != null">#{receiverName},</if>
+            <if test="receiverPhone != null">#{receiverPhone},</if>
+            <if test="receiverAddress != null">#{receiverAddress},</if>
+            <if test="totalCount != null">#{totalCount},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="orderStatus != null">#{orderStatus},</if>
+            <if test="payStatus != null">#{payStatus},</if>
+            <if test="shareFlag != null">#{shareFlag},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            sysdate()
+        </trim>
+    </insert>
+
+    <update id="updateKitchenOrder" parameterType="KitchenOrder">
+        update kitchen_order
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="orderStatus != null">order_status = #{orderStatus},</if>
+            <if test="payStatus != null">pay_status = #{payStatus},</if>
+            <if test="chefId != null">chef_id = #{chefId},</if>
+            <if test="receiverName != null">receiver_name = #{receiverName},</if>
+            <if test="receiverPhone != null">receiver_phone = #{receiverPhone},</if>
+            <if test="receiverAddress != null">receiver_address = #{receiverAddress},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="deleteKitchenOrderById" parameterType="Long">
+        update kitchen_order set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteKitchenOrderByIds" parameterType="String">
+        update kitchen_order set del_flag = '2' where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <insert id="batchInsertItem">
+        insert into kitchen_order_item(order_id, dish_id, dish_name, dish_cover, spec_json, quantity, price) values
+        <foreach item="item" collection="list" separator=",">
+            (#{item.orderId}, #{item.dishId}, #{item.dishName}, #{item.dishCover}, #{item.specJson}, #{item.quantity}, #{item.price})
+        </foreach>
+    </insert>
+
+    <delete id="deleteItemByOrderIds" parameterType="String">
+        delete from kitchen_order_item where order_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+</mapper>

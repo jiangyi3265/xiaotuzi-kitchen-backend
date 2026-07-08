@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenCommentMapper">
+
+    <resultMap type="KitchenComment" id="KitchenCommentResult">
+        <id     property="id"           column="id"            />
+        <result property="postId"       column="post_id"       />
+        <result property="wxUserId"     column="wx_user_id"    />
+        <result property="userNickname" column="user_nickname" />
+        <result property="userAvatar"   column="user_avatar"   />
+        <result property="content"      column="content"       />
+        <result property="auditStatus"  column="audit_status"  />
+        <result property="createBy"     column="create_by"     />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateBy"     column="update_by"     />
+        <result property="updateTime"   column="update_time"   />
+        <result property="remark"       column="remark"        />
+    </resultMap>
+
+    <sql id="selectKitchenCommentVo">
+        select c.id, c.post_id, c.wx_user_id, u.nickname as user_nickname, u.avatar as user_avatar,
+               c.content, c.audit_status,
+               c.create_by, c.create_time, c.update_by, c.update_time, c.remark
+        from kitchen_comment c
+        left join kitchen_wx_user u on u.id = c.wx_user_id
+    </sql>
+
+    <select id="selectKitchenCommentList" parameterType="KitchenComment" resultMap="KitchenCommentResult">
+        <include refid="selectKitchenCommentVo"/>
+        <where>
+            c.del_flag = '0'
+            <if test="postId != null">                            AND c.post_id = #{postId}</if>
+            <if test="wxUserId != null">                          AND c.wx_user_id = #{wxUserId}</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND c.audit_status = #{auditStatus}</if>
+        </where>
+        order by c.create_time desc
+    </select>
+
+    <select id="selectKitchenCommentById" parameterType="Long" resultMap="KitchenCommentResult">
+        <include refid="selectKitchenCommentVo"/>
+        where c.id = #{id} and c.del_flag = '0'
+    </select>
+
+    <select id="selectCountByPost" parameterType="Long" resultType="int">
+        select count(1) from kitchen_comment
+        where post_id = #{postId} and audit_status = '1' and del_flag = '0'
+    </select>
+
+    <insert id="insertKitchenComment" parameterType="KitchenComment" useGeneratedKeys="true" keyProperty="id">
+        insert into kitchen_comment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="postId != null">post_id,</if>
+            <if test="wxUserId != null">wx_user_id,</if>
+            <if test="content != null">content,</if>
+            <if test="auditStatus != null">audit_status,</if>
+            <if test="remark != null">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="postId != null">#{postId},</if>
+            <if test="wxUserId != null">#{wxUserId},</if>
+            <if test="content != null">#{content},</if>
+            <if test="auditStatus != null">#{auditStatus},</if>
+            <if test="remark != null">#{remark},</if>
+            sysdate()
+        </trim>
+    </insert>
+
+    <update id="updateKitchenComment" parameterType="KitchenComment">
+        update kitchen_comment
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="content != null">content = #{content},</if>
+            <if test="auditStatus != null">audit_status = #{auditStatus},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="increaseCommentCount" parameterType="Long">
+        update kitchen_share_post set comment_count = comment_count + 1 where id = #{postId}
+    </update>
+
+    <update id="deleteKitchenCommentById" parameterType="Long">
+        update kitchen_comment set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteKitchenCommentByIds" parameterType="String">
+        update kitchen_comment set del_flag = '2' where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+</mapper>

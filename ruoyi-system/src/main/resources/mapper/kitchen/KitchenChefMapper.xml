@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenChefMapper">
+
+    <resultMap type="KitchenChef" id="KitchenChefResult">
+        <id     property="id"         column="id"          />
+        <result property="chefName"   column="chef_name"   />
+        <result property="avatar"     column="avatar"      />
+        <result property="skillTag"   column="skill_tag"   />
+        <result property="intro"      column="intro"       />
+        <result property="extraPrice" column="extra_price" />
+        <result property="estTime"    column="est_time"    />
+        <result property="status"     column="status"      />
+        <result property="orderNum"   column="order_num"   />
+        <result property="createBy"   column="create_by"   />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy"   column="update_by"   />
+        <result property="updateTime" column="update_time" />
+        <result property="remark"     column="remark"      />
+    </resultMap>
+
+    <sql id="selectKitchenChefVo">
+        select id, chef_name, avatar, skill_tag, intro, extra_price, est_time, status, order_num,
+               create_by, create_time, update_by, update_time, remark
+        from kitchen_chef
+    </sql>
+
+    <select id="selectKitchenChefList" parameterType="KitchenChef" resultMap="KitchenChefResult">
+        <include refid="selectKitchenChefVo"/>
+        <where>
+            del_flag = '0'
+            <if test="chefName != null and chefName != ''"> AND chef_name like concat('%', #{chefName}, '%')</if>
+            <if test="skillTag != null and skillTag != ''"> AND skill_tag like concat('%', #{skillTag}, '%')</if>
+            <if test="status != null and status != ''">     AND status = #{status}</if>
+        </where>
+        order by order_num, id
+    </select>
+
+    <select id="selectKitchenChefById" parameterType="Long" resultMap="KitchenChefResult">
+        <include refid="selectKitchenChefVo"/>
+        where id = #{id} and del_flag = '0'
+    </select>
+
+    <insert id="insertKitchenChef" parameterType="KitchenChef" useGeneratedKeys="true" keyProperty="id">
+        insert into kitchen_chef
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="chefName != null and chefName != ''">chef_name,</if>
+            <if test="avatar != null">avatar,</if>
+            <if test="skillTag != null">skill_tag,</if>
+            <if test="intro != null">intro,</if>
+            <if test="extraPrice != null">extra_price,</if>
+            <if test="estTime != null">est_time,</if>
+            <if test="status != null">status,</if>
+            <if test="orderNum != null">order_num,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="chefName != null and chefName != ''">#{chefName},</if>
+            <if test="avatar != null">#{avatar},</if>
+            <if test="skillTag != null">#{skillTag},</if>
+            <if test="intro != null">#{intro},</if>
+            <if test="extraPrice != null">#{extraPrice},</if>
+            <if test="estTime != null">#{estTime},</if>
+            <if test="status != null">#{status},</if>
+            <if test="orderNum != null">#{orderNum},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            sysdate()
+        </trim>
+    </insert>
+
+    <update id="updateKitchenChef" parameterType="KitchenChef">
+        update kitchen_chef
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="chefName != null and chefName != ''">chef_name = #{chefName},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="skillTag != null">skill_tag = #{skillTag},</if>
+            <if test="intro != null">intro = #{intro},</if>
+            <if test="extraPrice != null">extra_price = #{extraPrice},</if>
+            <if test="estTime != null">est_time = #{estTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="deleteKitchenChefById" parameterType="Long">
+        update kitchen_chef set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteKitchenChefByIds" parameterType="String">
+        update kitchen_chef set del_flag = '2' where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+</mapper>

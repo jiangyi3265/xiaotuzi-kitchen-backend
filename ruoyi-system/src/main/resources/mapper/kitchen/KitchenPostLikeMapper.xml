@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenPostLikeMapper">
+
+    <select id="countLike" resultType="int">
+        select count(1) from kitchen_post_like where post_id = #{postId} and wx_user_id = #{wxUserId}
+    </select>
+
+    <insert id="insertLike">
+        insert into kitchen_post_like(post_id, wx_user_id, create_time)
+        values(#{postId}, #{wxUserId}, sysdate())
+    </insert>
+
+    <delete id="deleteLike">
+        delete from kitchen_post_like where post_id = #{postId} and wx_user_id = #{wxUserId}
+    </delete>
+
+</mapper>

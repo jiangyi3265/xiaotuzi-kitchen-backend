@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenShopMapper">
+
+    <resultMap type="KitchenShop" id="KitchenShopResult">
+        <id     property="id"            column="id"             />
+        <result property="shopName"      column="shop_name"      />
+        <result property="avatar"        column="avatar"         />
+        <result property="banner"        column="banner"         />
+        <result property="subtitle"      column="subtitle"       />
+        <result property="inviteCover"   column="invite_cover"   />
+        <result property="inviteText"    column="invite_text"    />
+        <result property="wechatQr"      column="wechat_qr"      />
+        <result property="alipayQr"      column="alipay_qr"      />
+        <result property="storeName"     column="store_name"     />
+        <result property="storeAddress"  column="store_address"  />
+        <result property="businessHours" column="business_hours" />
+        <result property="storePhone"    column="store_phone"    />
+        <result property="announceEnabled" column="announce_enabled" />
+        <result property="announceTitle"   column="announce_title"   />
+        <result property="announceContent" column="announce_content" />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"        column="remark"         />
+    </resultMap>
+
+    <sql id="selectKitchenShopVo">
+        select id, shop_name, avatar, banner, subtitle, invite_cover, invite_text, wechat_qr, alipay_qr,
+               store_name, store_address, business_hours, store_phone,
+               announce_enabled, announce_title, announce_content,
+               create_by, create_time, update_by, update_time, remark
+        from kitchen_shop
+    </sql>
+
+    <select id="selectKitchenShop" resultMap="KitchenShopResult">
+        <include refid="selectKitchenShopVo"/>
+        where del_flag = '0' order by id limit 1
+    </select>
+
+    <select id="selectKitchenShopById" parameterType="Long" resultMap="KitchenShopResult">
+        <include refid="selectKitchenShopVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertKitchenShop" parameterType="KitchenShop" useGeneratedKeys="true" keyProperty="id">
+        insert into kitchen_shop(shop_name, avatar, banner, subtitle, invite_cover, invite_text,
+            wechat_qr, alipay_qr, store_name, store_address, business_hours, store_phone,
+            announce_enabled, announce_title, announce_content, remark, create_time)
+        values(#{shopName}, #{avatar}, #{banner}, #{subtitle}, #{inviteCover}, #{inviteText},
+            #{wechatQr}, #{alipayQr}, #{storeName}, #{storeAddress}, #{businessHours}, #{storePhone},
+            #{announceEnabled}, #{announceTitle}, #{announceContent}, #{remark}, sysdate())
+    </insert>
+
+    <update id="updateKitchenShop" parameterType="KitchenShop">
+        update kitchen_shop
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="shopName != null">shop_name = #{shopName},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="banner != null">banner = #{banner},</if>
+            <if test="subtitle != null">subtitle = #{subtitle},</if>
+            <if test="inviteCover != null">invite_cover = #{inviteCover},</if>
+            <if test="inviteText != null">invite_text = #{inviteText},</if>
+            <if test="wechatQr != null">wechat_qr = #{wechatQr},</if>
+            <if test="alipayQr != null">alipay_qr = #{alipayQr},</if>
+            <if test="storeName != null">store_name = #{storeName},</if>
+            <if test="storeAddress != null">store_address = #{storeAddress},</if>
+            <if test="businessHours != null">business_hours = #{businessHours},</if>
+            <if test="storePhone != null">store_phone = #{storePhone},</if>
+            <if test="announceEnabled != null">announce_enabled = #{announceEnabled},</if>
+            <if test="announceTitle != null">announce_title = #{announceTitle},</if>
+            <if test="announceContent != null">announce_content = #{announceContent},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </trim>
+        where id = #{id}
+    </update>
+
+</mapper>

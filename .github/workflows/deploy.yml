@@ -1,0 +1,79 @@
+name: Deploy backend
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify build
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Maven package
+        run: mvn -B package -DskipTests
+
+      - name: Deploy on server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_DEPLOY_PATH: ${{ secrets.SERVER_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          test -n "$SERVER_HOST"
+          test -n "$SERVER_USER"
+          test -n "$SERVER_SSH_KEY"
+
+          PORT="${SERVER_PORT:-22}"
+          DEPLOY_PATH="${SERVER_DEPLOY_PATH:-/opt/xiaotuzi-kitchen/current}"
+          REPO_URL="https://github.com/${GITHUB_REPOSITORY}.git"
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/xiaotuzi_deploy_key
+          chmod 600 ~/.ssh/xiaotuzi_deploy_key
+          ssh-keyscan -p "$PORT" -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/xiaotuzi_deploy_key -p "$PORT" "$SERVER_USER@$SERVER_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' REPO_URL='$REPO_URL' bash -s" <<'EOF'
+          set -euo pipefail
+
+          TARGET_DIR="$DEPLOY_PATH/RuoYi-Vue"
+          if [ -d "$TARGET_DIR/.git" ]; then
+            git -C "$TARGET_DIR" fetch --prune origin main
+            git -C "$TARGET_DIR" reset --hard origin/main
+          else
+            rm -rf "$TARGET_DIR"
+            git clone --branch main --depth 1 "$REPO_URL" "$TARGET_DIR"
+          fi
+
+          cd "$DEPLOY_PATH"
+
+          for sql in \
+            RuoYi-Vue/sql/kitchen_patch_20260708_ingredients.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260708_demo_ingredients.sql
+          do
+            if [ -f "$sql" ]; then
+              docker exec -i xiaotuzi-mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" ha' < "$sql"
+            fi
+          done
+
+          docker compose -f docker-compose.deploy.yml up -d --build backend
+          curl -fsS http://127.0.0.1:18081/api/wx/shop/info >/dev/null
+          docker compose -f docker-compose.deploy.yml ps
+          EOF

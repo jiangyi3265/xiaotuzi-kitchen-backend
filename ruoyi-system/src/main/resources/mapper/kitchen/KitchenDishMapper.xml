@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenDishMapper">
+
+    <resultMap type="KitchenDish" id="KitchenDishResult">
+        <id     property="id"           column="id"            />
+        <result property="dishName"     column="dish_name"     />
+        <result property="cover"        column="cover"         />
+        <result property="categoryId"   column="category_id"   />
+        <result property="categoryName" column="category_name" />
+        <result property="story"        column="story"         />
+        <result property="ingredients"  column="ingredients"   />
+        <result property="virtualPrice" column="virtual_price" />
+        <result property="hasSpecs"     column="has_specs"     />
+        <result property="recipeOpen"   column="recipe_open"   />
+        <result property="cookingExp"   column="cooking_exp"   />
+        <result property="prepTime"     column="prep_time"     />
+        <result property="cookTime"     column="cook_time"     />
+        <result property="difficulty"   column="difficulty"    />
+        <result property="portions"     column="portions"      />
+        <result property="sales"        column="sales"         />
+        <result property="orderNum"     column="order_num"     />
+        <result property="status"       column="status"        />
+        <result property="createBy"     column="create_by"     />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateBy"     column="update_by"     />
+        <result property="updateTime"   column="update_time"   />
+        <result property="remark"       column="remark"        />
+    </resultMap>
+
+    <resultMap type="KitchenDishStep" id="KitchenDishStepResult">
+        <id     property="id"      column="id"      />
+        <result property="dishId"  column="dish_id" />
+        <result property="stepNo"  column="step_no" />
+        <result property="image"   column="image"   />
+        <result property="content" column="content" />
+        <result property="timer"   column="timer"   />
+    </resultMap>
+
+    <resultMap type="KitchenDishSpec" id="KitchenDishSpecResult">
+        <id     property="id"        column="id"        />
+        <result property="dishId"    column="dish_id"   />
+        <result property="specName"  column="spec_name" />
+        <result property="multiple"  column="multiple"  />
+        <result property="orderNum"  column="order_num" />
+    </resultMap>
+
+    <resultMap type="KitchenDishSpecValue" id="KitchenDishSpecValueResult">
+        <id     property="id"        column="id"         />
+        <result property="specId"    column="spec_id"    />
+        <result property="specValue" column="spec_value" />
+        <result property="orderNum"  column="order_num"  />
+    </resultMap>
+
+    <sql id="selectKitchenDishVo">
+        select d.id, d.dish_name, d.cover, d.category_id, c.cat_name as category_name, d.story, d.ingredients,
+               d.virtual_price, d.has_specs, d.recipe_open, d.cooking_exp, d.prep_time, d.cook_time,
+               d.difficulty, d.portions, d.sales, d.order_num, d.status,
+               d.create_by, d.create_time, d.update_by, d.update_time, d.remark
+        from kitchen_dish d
+        left join kitchen_category c on c.id = d.category_id
+    </sql>
+
+    <select id="selectKitchenDishList" parameterType="KitchenDish" resultMap="KitchenDishResult">
+        <include refid="selectKitchenDishVo"/>
+        <where>
+            d.del_flag = '0'
+            <if test="dishName != null and dishName != ''"> AND d.dish_name like concat('%', #{dishName}, '%')</if>
+            <if test="categoryId != null">                  AND d.category_id = #{categoryId}</if>
+            <if test="difficulty != null and difficulty != ''"> AND d.difficulty = #{difficulty}</if>
+            <if test="status != null and status != ''">     AND d.status = #{status}</if>
+        </where>
+        order by d.order_num, d.id desc
+    </select>
+
+    <select id="selectKitchenDishById" parameterType="Long" resultMap="KitchenDishResult">
+        <include refid="selectKitchenDishVo"/>
+        where d.id = #{id} and d.del_flag = '0'
+    </select>
+
+    <select id="selectStepsByDishId" parameterType="Long" resultMap="KitchenDishStepResult">
+        select id, dish_id, step_no, image, content, timer
+        from kitchen_dish_step where dish_id = #{dishId} order by step_no
+    </select>
+
+    <select id="selectSpecsByDishId" parameterType="Long" resultMap="KitchenDishSpecResult">
+        select id, dish_id, spec_name, multiple, order_num
+        from kitchen_dish_spec where dish_id = #{dishId} order by order_num
+    </select>
+
+    <select id="selectSpecValuesBySpecId" parameterType="Long" resultMap="KitchenDishSpecValueResult">
+        select id, spec_id, spec_value, order_num
+        from kitchen_dish_spec_value where spec_id = #{specId} order by order_num
+    </select>
+
+    <insert id="insertKitchenDish" parameterType="KitchenDish" useGeneratedKeys="true" keyProperty="id">
+        insert into kitchen_dish
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="dishName != null and dishName != ''">dish_name,</if>
+            <if test="cover != null">cover,</if>
+            <if test="categoryId != null">category_id,</if>
+            <if test="story != null">story,</if>
+            <if test="ingredients != null">ingredients,</if>
+            <if test="virtualPrice != null">virtual_price,</if>
+            <if test="hasSpecs != null">has_specs,</if>
+            <if test="recipeOpen != null">recipe_open,</if>
+            <if test="cookingExp != null">cooking_exp,</if>
+            <if test="prepTime != null">prep_time,</if>
+            <if test="cookTime != null">cook_time,</if>
+            <if test="difficulty != null">difficulty,</if>
+            <if test="portions != null">portions,</if>
+            <if test="orderNum != null">order_num,</if>
+            <if test="status != null">status,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            sales, create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="dishName != null and dishName != ''">#{dishName},</if>
+            <if test="cover != null">#{cover},</if>
+            <if test="categoryId != null">#{categoryId},</if>
+            <if test="story != null">#{story},</if>
+            <if test="ingredients != null">#{ingredients},</if>
+            <if test="virtualPrice != null">#{virtualPrice},</if>
+            <if test="hasSpecs != null">#{hasSpecs},</if>
+            <if test="recipeOpen != null">#{recipeOpen},</if>
+            <if test="cookingExp != null">#{cookingExp},</if>
+            <if test="prepTime != null">#{prepTime},</if>
+            <if test="cookTime != null">#{cookTime},</if>
+            <if test="difficulty != null">#{difficulty},</if>
+            <if test="portions != null">#{portions},</if>
+            <if test="orderNum != null">#{orderNum},</if>
+            <if test="status != null">#{status},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            0, sysdate()
+        </trim>
+    </insert>
+
+    <update id="updateKitchenDish" parameterType="KitchenDish">
+        update kitchen_dish
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="dishName != null and dishName != ''">dish_name = #{dishName},</if>
+            <if test="cover != null">cover = #{cover},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="story != null">story = #{story},</if>
+            <if test="ingredients != null">ingredients = #{ingredients},</if>
+            virtual_price = #{virtualPrice},
+            <if test="hasSpecs != null">has_specs = #{hasSpecs},</if>
+            <if test="recipeOpen != null">recipe_open = #{recipeOpen},</if>
+            <if test="cookingExp != null">cooking_exp = #{cookingExp},</if>
+            <if test="prepTime != null">prep_time = #{prepTime},</if>
+            <if test="cookTime != null">cook_time = #{cookTime},</if>
+            <if test="difficulty != null">difficulty = #{difficulty},</if>
+            <if test="portions != null">portions = #{portions},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="addSales">
+        update kitchen_dish set sales = sales + #{count} where id = #{id}
+    </update>
+
+    <update id="updateDishStatus">
+        update kitchen_dish set status = #{status}, update_time = sysdate() where id = #{id}
+    </update>
+
+    <update id="deleteKitchenDishById" parameterType="Long">
+        update kitchen_dish set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteKitchenDishByIds" parameterType="String">
+        update kitchen_dish set del_flag = '2' where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <!-- 子表：步骤 -->
+    <insert id="batchInsertStep">
+        insert into kitchen_dish_step(dish_id, step_no, image, content, timer) values
+        <foreach item="item" collection="list" separator=",">
+            (#{item.dishId}, #{item.stepNo}, #{item.image}, #{item.content}, #{item.timer})
+        </foreach>
+    </insert>
+
+    <delete id="deleteStepByDishIds" parameterType="String">
+        delete from kitchen_dish_step where dish_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+    <!-- 子表：规格组 -->
+    <insert id="insertSpec" parameterType="KitchenDishSpec" useGeneratedKeys="true" keyProperty="id">
+        insert into kitchen_dish_spec(dish_id, spec_name, multiple, order_num)
+        values (#{dishId}, #{specName}, #{multiple}, #{orderNum})
+    </insert>
+
+    <delete id="deleteSpecByDishIds" parameterType="String">
+        delete from kitchen_dish_spec where dish_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+    <!-- 子表：规格值 -->
+    <insert id="batchInsertSpecValue">
+        insert into kitchen_dish_spec_value(spec_id, spec_value, order_num) values
+        <foreach item="item" collection="list" separator=",">
+            (#{item.specId}, #{item.specValue}, #{item.orderNum})
+        </foreach>
+    </insert>
+
+    <delete id="deleteSpecValueByDishIds" parameterType="String">
+        delete from kitchen_dish_spec_value where spec_id in
+        (select id from kitchen_dish_spec where dish_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+        )
+    </delete>
+
+</mapper>
