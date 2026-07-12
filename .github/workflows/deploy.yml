@@ -54,9 +54,12 @@ jobs:
             --exclude='target' \
             --exclude='*/target' \
             -czf "/tmp/$ARCHIVE_NAME" .
-          mkdir -p /tmp/backend-overlay/BOOT-INF/classes
-          for module in ruoyi-common ruoyi-system ruoyi-framework ruoyi-admin; do
-            if [ -d "$module/target/classes" ]; then cp -a "$module/target/classes/." /tmp/backend-overlay/BOOT-INF/classes/; fi
+          mkdir -p /tmp/backend-overlay/BOOT-INF/classes /tmp/backend-overlay/BOOT-INF/lib
+          cp -a ruoyi-admin/target/classes/. /tmp/backend-overlay/BOOT-INF/classes/
+          for module in ruoyi-common ruoyi-system ruoyi-framework ruoyi-quartz ruoyi-generator; do
+            for jar in "$module"/target/*.jar; do
+              if [ -f "$jar" ] && [[ "$jar" != *.original ]]; then cp "$jar" /tmp/backend-overlay/BOOT-INF/lib/; fi
+            done
           done
           tar -czf "/tmp/$OVERLAY_NAME" -C /tmp/backend-overlay .
           scp -o BatchMode=yes -o ConnectTimeout=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "/tmp/$ARCHIVE_NAME" "$SERVER_USER@$SERVER_HOST:/tmp/$ARCHIVE_NAME"
@@ -89,7 +92,8 @@ jobs:
           rebuilt = jar + '.new'
           with zipfile.ZipFile(jar, 'r') as src, zipfile.ZipFile(rebuilt, 'w') as dst:
               for info in src.infolist():
-                  if info.filename not in replacement:
+                  stale_shadow = info.filename.startswith('BOOT-INF/classes/com/ruoyi/') or info.filename.startswith('BOOT-INF/classes/mapper/')
+                  if info.filename not in replacement and not stale_shadow:
                       dst.writestr(info, src.read(info.filename))
               for name, path in replacement.items():
                   dst.write(path, name, compress_type=zipfile.ZIP_DEFLATED)
