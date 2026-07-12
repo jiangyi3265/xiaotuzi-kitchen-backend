@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenServiceApplicationMapper">
+  <resultMap id="Result" type="KitchenServiceApplication">
+    <id property="id" column="id"/><result property="wxUserId" column="wx_user_id"/>
+    <result property="applicationType" column="application_type"/><result property="applicantName" column="applicant_name"/>
+    <result property="phone" column="phone"/><result property="province" column="province"/><result property="city" column="city"/>
+    <result property="district" column="district"/><result property="address" column="address"/><result property="experience" column="experience"/>
+    <result property="skillTag" column="skill_tag"/><result property="vehicleType" column="vehicle_type"/>
+    <result property="auditStatus" column="audit_status"/><result property="providerId" column="provider_id"/>
+    <result property="remark" column="remark"/><result property="createTime" column="create_time"/><result property="updateTime" column="update_time"/>
+  </resultMap>
+  <select id="selectList" resultMap="Result">
+    select * from kitchen_service_application
+    <where>
+      <if test="applicantName != null and applicantName != ''">applicant_name like concat('%',#{applicantName},'%')</if>
+      <if test="applicationType != null and applicationType != ''">and application_type=#{applicationType}</if>
+      <if test="city != null and city != ''">and city=#{city}</if>
+      <if test="auditStatus != null and auditStatus != ''">and audit_status=#{auditStatus}</if>
+    </where>
+    order by id desc
+  </select>
+  <select id="selectById" resultMap="Result">select * from kitchen_service_application where id=#{id}</select>
+  <select id="selectLatestByUserAndType" resultMap="Result">select * from kitchen_service_application where wx_user_id=#{wxUserId} and application_type=#{applicationType} order by id desc limit 1</select>
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    insert into kitchen_service_application(wx_user_id,application_type,applicant_name,phone,province,city,district,address,experience,skill_tag,vehicle_type,audit_status,create_time)
+    values(#{wxUserId},#{applicationType},#{applicantName},#{phone},#{province},#{city},#{district},#{address},#{experience},#{skillTag},#{vehicleType},'0',sysdate())
+  </insert>
+  <update id="audit">update kitchen_service_application set audit_status=#{auditStatus},remark=#{remark},provider_id=#{providerId},update_time=sysdate() where id=#{id}</update>
+  <insert id="insertRiderProvider" parameterType="map" useGeneratedKeys="true" keyProperty="id">
+    insert into kitchen_rider(rider_name,tag,intro,delivery_fee,est_time,status,order_num,create_by,create_time,del_flag)
+    values(#{name},#{tag},#{intro},0,'约30分钟','0',0,'service-application',sysdate(),'0')
+  </insert>
+  <insert id="insertChefProvider" parameterType="map" useGeneratedKeys="true" keyProperty="id">
+    insert into kitchen_chef(chef_name,skill_tag,intro,extra_price,est_time,status,order_num,create_by,create_time,del_flag)
+    values(#{name},#{tag},#{intro},0,'约40分钟','0',0,'service-application',sysdate(),'0')
+  </insert>
+</mapper>
