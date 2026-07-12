@@ -48,6 +48,8 @@ jobs:
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/xiaotuzi_deploy_key
           chmod 600 ~/.ssh/xiaotuzi_deploy_key
           ssh-keyscan -p "$PORT" -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+          mkdir -p deploy-artifact
+          cp ruoyi-admin/target/ruoyi-admin.jar deploy-artifact/app.jar
           tar \
             --exclude='.git' \
             --exclude='target' \
