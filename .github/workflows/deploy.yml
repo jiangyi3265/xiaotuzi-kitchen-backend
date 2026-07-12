@@ -69,7 +69,9 @@ jobs:
 
           for sql in \
             RuoYi-Vue/sql/kitchen_patch_20260708_ingredients.sql \
-            RuoYi-Vue/sql/kitchen_patch_20260708_demo_ingredients.sql
+            RuoYi-Vue/sql/kitchen_patch_20260708_demo_ingredients.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260711_region_agent.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260711_social_spaces.sql
           do
             if [ -f "$sql" ]; then
               docker exec -i xiaotuzi-mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" ha' < "$sql"

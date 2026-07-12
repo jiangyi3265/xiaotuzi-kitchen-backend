@@ -53,7 +53,15 @@ public class KitchenOrderServiceImpl implements IKitchenOrderService
     @Override
     public List<KitchenOrder> selectKitchenOrderList(KitchenOrder kitchenOrder)
     {
-        return kitchenOrderMapper.selectKitchenOrderList(kitchenOrder);
+        List<KitchenOrder> list = kitchenOrderMapper.selectKitchenOrderList(kitchenOrder);
+        for (KitchenOrder order : list)
+        {
+            if (order.getId() != null)
+            {
+                order.setItems(kitchenOrderMapper.selectItemsByOrderId(order.getId()));
+            }
+        }
+        return list;
     }
 
     @Override

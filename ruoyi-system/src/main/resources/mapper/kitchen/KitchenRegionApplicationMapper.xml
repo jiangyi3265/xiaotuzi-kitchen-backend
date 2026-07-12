@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenRegionApplicationMapper">
+  <resultMap id="Result" type="KitchenRegionApplication">
+    <id property="id" column="id"/><result property="wxUserId" column="wx_user_id"/>
+    <result property="applicantName" column="applicant_name"/><result property="phone" column="phone"/>
+    <result property="province" column="province"/><result property="city" column="city"/><result property="district" column="district"/>
+    <result property="address" column="address"/><result property="experience" column="experience"/>
+    <result property="auditStatus" column="audit_status"/><result property="enabled" column="enabled"/>
+    <result property="remark" column="remark"/><result property="createTime" column="create_time"/><result property="updateTime" column="update_time"/>
+  </resultMap>
+  <select id="selectList" resultMap="Result">
+    select * from kitchen_region_application
+    <where><if test="applicantName != null and applicantName != ''">applicant_name like concat('%',#{applicantName},'%')</if>
+      <if test="city != null and city != ''">and city=#{city}</if><if test="district != null and district != ''">and district=#{district}</if>
+      <if test="auditStatus != null and auditStatus != ''">and audit_status=#{auditStatus}</if></where> order by id desc
+  </select>
+  <select id="selectById" resultMap="Result">select * from kitchen_region_application where id=#{id}</select>
+  <select id="selectLatestByUser" resultMap="Result">select * from kitchen_region_application where wx_user_id=#{wxUserId} order by id desc limit 1</select>
+  <select id="countEnabledRegion" resultType="int">select count(1) from kitchen_region_application where province=#{province} and city=#{city} and district=#{district} and audit_status='1' and enabled='1'</select>
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">insert into kitchen_region_application(wx_user_id,applicant_name,phone,province,city,district,address,experience,audit_status,enabled,create_time) values(#{wxUserId},#{applicantName},#{phone},#{province},#{city},#{district},#{address},#{experience},'0','0',sysdate())</insert>
+  <update id="audit">update kitchen_region_application set audit_status=#{auditStatus},enabled=case when #{auditStatus}='1' then '1' else '0' end,remark=#{remark},update_time=sysdate() where id=#{id}</update>
+  <update id="updateEnabled">update kitchen_region_application set enabled=#{enabled},update_time=sysdate() where id=#{id} and audit_status='1'</update>
+</mapper>

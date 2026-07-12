@@ -6,6 +6,8 @@
         <id     property="id"              column="id"               />
         <result property="orderNo"         column="order_no"         />
         <result property="wxUserId"        column="wx_user_id"       />
+        <result property="coupleSpaceId"   column="couple_space_id"  />
+        <result property="recipientWxUserId" column="recipient_wx_user_id" />
         <result property="userNickname"    column="user_nickname"    />
         <result property="serviceType"     column="service_type"     />
         <result property="chefId"          column="chef_id"          />
@@ -39,7 +41,7 @@
     </resultMap>
 
     <sql id="selectKitchenOrderVo">
-        select o.id, o.order_no, o.wx_user_id, u.nickname as user_nickname, o.service_type,
+        select o.id, o.order_no, o.wx_user_id, o.couple_space_id, o.recipient_wx_user_id, u.nickname as user_nickname, o.service_type,
                o.chef_id, c.chef_name, o.rider_id, r.rider_name, o.receiver_name, o.receiver_phone, o.receiver_address,
                o.total_count, o.total_amount, o.order_status, o.pay_status, o.share_flag,
                o.create_by, o.create_time, o.update_by, o.update_time, o.remark
@@ -54,7 +56,7 @@
         <where>
             o.del_flag = '0'
             <if test="orderNo != null and orderNo != ''">       AND o.order_no like concat('%', #{orderNo}, '%')</if>
-            <if test="wxUserId != null">                         AND o.wx_user_id = #{wxUserId}</if>
+            <if test="wxUserId != null">                         AND (o.wx_user_id = #{wxUserId} OR o.recipient_wx_user_id = #{wxUserId})</if>
             <if test="serviceType != null and serviceType != ''">AND o.service_type = #{serviceType}</if>
             <if test="orderStatus != null and orderStatus != ''">AND o.order_status = #{orderStatus}</if>
             <if test="payStatus != null and payStatus != ''">    AND o.pay_status = #{payStatus}</if>
@@ -85,6 +87,8 @@
             order_no,
             <if test="wxUserId != null">wx_user_id,</if>
             <if test="serviceType != null">service_type,</if>
+            <if test="coupleSpaceId != null">couple_space_id,</if>
+            <if test="recipientWxUserId != null">recipient_wx_user_id,</if>
             <if test="chefId != null">chef_id,</if>
             <if test="riderId != null">rider_id,</if>
             <if test="receiverName != null">receiver_name,</if>
@@ -103,6 +107,8 @@
             #{orderNo},
             <if test="wxUserId != null">#{wxUserId},</if>
             <if test="serviceType != null">#{serviceType},</if>
+            <if test="coupleSpaceId != null">#{coupleSpaceId},</if>
+            <if test="recipientWxUserId != null">#{recipientWxUserId},</if>
             <if test="chefId != null">#{chefId},</if>
             <if test="riderId != null">#{riderId},</if>
             <if test="receiverName != null">#{receiverName},</if>

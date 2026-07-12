@@ -27,6 +27,15 @@ public class KitchenOrder extends BaseEntity
     /** 小程序用户ID */
     private Long wxUserId;
 
+    /** 情侣空间ID（异地投喂） */
+    private Long coupleSpaceId;
+
+    /** 收餐用户ID（异地投喂） */
+    private Long recipientWxUserId;
+
+    /** 前端提交标记，非DB字段 */
+    private String remoteFeed;
+
     /** 用户昵称（非DB字段，列表展示） */
     @Excel(name = "下单用户")
     private String userNickname;
@@ -91,6 +100,13 @@ public class KitchenOrder extends BaseEntity
 
     public Long getWxUserId() { return wxUserId; }
     public void setWxUserId(Long wxUserId) { this.wxUserId = wxUserId; }
+
+    public Long getCoupleSpaceId() { return coupleSpaceId; }
+    public void setCoupleSpaceId(Long coupleSpaceId) { this.coupleSpaceId = coupleSpaceId; }
+    public Long getRecipientWxUserId() { return recipientWxUserId; }
+    public void setRecipientWxUserId(Long recipientWxUserId) { this.recipientWxUserId = recipientWxUserId; }
+    public String getRemoteFeed() { return remoteFeed; }
+    public void setRemoteFeed(String remoteFeed) { this.remoteFeed = remoteFeed; }
 
     public String getUserNickname() { return userNickname; }
     public void setUserNickname(String userNickname) { this.userNickname = userNickname; }
