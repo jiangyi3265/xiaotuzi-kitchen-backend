@@ -55,13 +55,21 @@ jobs:
             --exclude='target' \
             --exclude='*/target' \
             -czf "/tmp/$ARCHIVE_NAME" .
-          scp -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "/tmp/$ARCHIVE_NAME" "$SERVER_USER@$SERVER_HOST:/tmp/$ARCHIVE_NAME"
+          split -b 10m "/tmp/$ARCHIVE_NAME" "/tmp/$ARCHIVE_NAME.part."
+          pids=()
+          for part in "/tmp/$ARCHIVE_NAME.part."*; do
+            scp -o BatchMode=yes -o ConnectTimeout=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "$part" "$SERVER_USER@$SERVER_HOST:/tmp/$(basename "$part")" &
+            pids+=("$!")
+          done
+          for pid in "${pids[@]}"; do wait "$pid"; done
 
           ssh -i ~/.ssh/xiaotuzi_deploy_key -p "$PORT" "$SERVER_USER@$SERVER_HOST" \
             "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' bash -s" <<'EOF'
           set -euo pipefail
 
           TARGET_DIR="$DEPLOY_PATH/RuoYi-Vue"
+          cat "/tmp/$ARCHIVE_NAME.part."* > "/tmp/$ARCHIVE_NAME"
+          rm -f "/tmp/$ARCHIVE_NAME.part."*
           rm -rf "$TARGET_DIR"
           mkdir -p "$TARGET_DIR"
           tar -xzf "/tmp/$ARCHIVE_NAME" -C "$TARGET_DIR"
