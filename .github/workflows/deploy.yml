@@ -10,9 +10,6 @@ concurrency:
   group: deploy-backend
   cancel-in-progress: true
 
-permissions:
-  contents: write
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -32,7 +29,6 @@ jobs:
 
       - name: Deploy on server
         env:
-          GH_TOKEN: ${{ github.token }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_PORT: ${{ secrets.SERVER_PORT }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
@@ -47,8 +43,7 @@ jobs:
           PORT="${SERVER_PORT:-22}"
           DEPLOY_PATH="${SERVER_DEPLOY_PATH:-/opt/xiaotuzi-kitchen/current}"
           ARCHIVE_NAME="xiaotuzi-backend-${GITHUB_SHA}.tgz"
-          RELEASE_TAG="deploy-${GITHUB_SHA}"
-          ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/app.jar"
+          JAR_NAME="xiaotuzi-backend-${GITHUB_SHA}.jar"
           JAR_SIZE="$(stat -c%s ruoyi-admin/target/ruoyi-admin.jar)"
           JAR_SHA256="$(sha256sum ruoyi-admin/target/ruoyi-admin.jar | cut -d' ' -f1)"
 
@@ -61,13 +56,11 @@ jobs:
             --exclude='target' \
             --exclude='*/target' \
             -czf "/tmp/$ARCHIVE_NAME" .
-          cp ruoyi-admin/target/ruoyi-admin.jar /tmp/app.jar
-          gh release create "$RELEASE_TAG" /tmp/app.jar --title "$RELEASE_TAG" --notes "Temporary deployment artifact" --latest=false
-          trap 'gh release delete "$RELEASE_TAG" --cleanup-tag --yes >/dev/null 2>&1 || true' EXIT
           scp -o BatchMode=yes -o ConnectTimeout=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "/tmp/$ARCHIVE_NAME" "$SERVER_USER@$SERVER_HOST:/tmp/$ARCHIVE_NAME"
+          scp -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" ruoyi-admin/target/ruoyi-admin.jar "$SERVER_USER@$SERVER_HOST:/tmp/$JAR_NAME"
 
           ssh -i ~/.ssh/xiaotuzi_deploy_key -p "$PORT" "$SERVER_USER@$SERVER_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' ASSET_URL='$ASSET_URL' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' bash -s" <<'EOF'
+            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' JAR_NAME='$JAR_NAME' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' bash -s" <<'EOF'
           set -euo pipefail
 
           TARGET_DIR="$DEPLOY_PATH/RuoYi-Vue"
@@ -76,22 +69,9 @@ jobs:
           tar -xzf "/tmp/$ARCHIVE_NAME" -C "$TARGET_DIR"
           rm -f "/tmp/$ARCHIVE_NAME"
           mkdir -p "$TARGET_DIR/deploy-artifact"
-          CHUNK_SIZE=10000000
-          pids=()
-          starts=()
-          for start in $(seq 0 "$CHUNK_SIZE" $((JAR_SIZE - 1))); do
-            end=$((start + CHUNK_SIZE - 1))
-            if [ "$end" -ge "$JAR_SIZE" ]; then end=$((JAR_SIZE - 1)); fi
-            starts+=("$start")
-            curl -fL --retry 5 --retry-delay 2 --range "$start-$end" "$ASSET_URL" -o "$TARGET_DIR/deploy-artifact/part.$start" &
-            pids+=("$!")
-          done
-          for pid in "${pids[@]}"; do wait "$pid"; done
-          : > "$TARGET_DIR/deploy-artifact/app.jar"
-          for start in "${starts[@]}"; do cat "$TARGET_DIR/deploy-artifact/part.$start" >> "$TARGET_DIR/deploy-artifact/app.jar"; done
+          mv "/tmp/$JAR_NAME" "$TARGET_DIR/deploy-artifact/app.jar"
           test "$(stat -c%s "$TARGET_DIR/deploy-artifact/app.jar")" = "$JAR_SIZE"
           test "$(sha256sum "$TARGET_DIR/deploy-artifact/app.jar" | cut -d' ' -f1)" = "$JAR_SHA256"
-          rm -f "$TARGET_DIR/deploy-artifact"/part.*
 
           cd "$DEPLOY_PATH"
 
