@@ -18,6 +18,7 @@
   <select id="selectById" resultMap="Result">select * from kitchen_region_application where id=#{id}</select>
   <select id="selectLatestByUser" resultMap="Result">select * from kitchen_region_application where wx_user_id=#{wxUserId} order by id desc limit 1</select>
   <select id="countEnabledRegion" resultType="int">select count(1) from kitchen_region_application where province=#{province} and city=#{city} and district=#{district} and audit_status='1' and enabled='1'</select>
+  <select id="selectEnabledRegions" resultMap="Result">select min(id) id,province,city,district,'1' enabled,'1' audit_status,max(update_time) update_time from kitchen_region_application where audit_status='1' and enabled='1' group by province,city,district order by province,city,district</select>
   <insert id="insert" useGeneratedKeys="true" keyProperty="id">insert into kitchen_region_application(wx_user_id,applicant_name,phone,province,city,district,address,experience,audit_status,enabled,create_time) values(#{wxUserId},#{applicantName},#{phone},#{province},#{city},#{district},#{address},#{experience},'0','0',sysdate())</insert>
   <update id="audit">update kitchen_region_application set audit_status=#{auditStatus},enabled=case when #{auditStatus}='1' then '1' else '0' end,remark=#{remark},update_time=sysdate() where id=#{id}</update>
   <update id="updateEnabled">update kitchen_region_application set enabled=#{enabled},update_time=sysdate() where id=#{id} and audit_status='1'</update>

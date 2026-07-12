@@ -9,6 +9,8 @@ set @has_couple_space_id=(select count(1) from information_schema.columns where 
 set @sql=if(@has_couple_space_id=0,'alter table kitchen_order add column couple_space_id bigint default null comment ''情侣空间ID'' after wx_user_id','select 1'); prepare stmt from @sql; execute stmt; deallocate prepare stmt;
 set @has_recipient_id=(select count(1) from information_schema.columns where table_schema=database() and table_name='kitchen_order' and column_name='recipient_wx_user_id');
 set @sql=if(@has_recipient_id=0,'alter table kitchen_order add column recipient_wx_user_id bigint default null comment ''异地投喂收餐用户'' after couple_space_id','select 1'); prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+set @has_group_room_id=(select count(1) from information_schema.columns where table_schema=database() and table_name='kitchen_order' and column_name='group_room_id');
+set @sql=if(@has_group_room_id=0,'alter table kitchen_order add column group_room_id bigint default null comment ''多人聚餐房间ID'' after wx_user_id','select 1'); prepare stmt from @sql; execute stmt; deallocate prepare stmt;
 
 set @kitchen_menu_id = (select menu_id from sys_menu where menu_name in ('私房菜管理','厨房管理') order by field(menu_name,'私房菜管理','厨房管理') limit 1);
 insert into sys_menu(menu_name,parent_id,order_num,path,component,query,route_name,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,remark)

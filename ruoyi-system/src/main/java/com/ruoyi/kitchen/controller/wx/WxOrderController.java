@@ -46,8 +46,21 @@ public class WxOrderController
     {
         Long userId = wxTokenService.getRequiredUserId(request);
         kitchenOrder.setWxUserId(userId);
+        Map<String, Object> group = null;
+        if (kitchenOrder.getGroupRoomId() != null)
+        {
+            group = socialMapper.selectGroupRoomById(kitchenOrder.getGroupRoomId());
+            if (group == null)
+            {
+                return AjaxResult.error("聚餐房间不存在或已经结束");
+            }
+            if (socialMapper.countGroupMember(kitchenOrder.getGroupRoomId(), userId) == 0)
+            {
+                return AjaxResult.error("你不在该聚餐房间");
+            }
+        }
         Map<String, Object> couple = null;
-        if ("1".equals(kitchenOrder.getRemoteFeed()))
+        if ("1".equals(kitchenOrder.getRemoteFeed()) || "1".equals(kitchenOrder.getCoupleOrder()))
         {
             couple = socialMapper.selectCoupleByUser(userId);
             if (couple == null)
@@ -67,14 +80,32 @@ public class WxOrderController
         KitchenOrder result = kitchenOrderService.submitOrder(kitchenOrder);
         if (couple != null)
         {
-            socialMapper.addFeedCount(result.getCoupleSpaceId());
+            if ("1".equals(kitchenOrder.getRemoteFeed()))
+            {
+                socialMapper.addFeedCount(result.getCoupleSpaceId());
+            }
             Map<String, Object> notice = new java.util.HashMap<>();
             notice.put("userId", result.getRecipientWxUserId());
-            notice.put("type", "couple_feed");
-            notice.put("title", "TA 给你投喂了一份美食");
+            notice.put("type", "1".equals(kitchenOrder.getRemoteFeed()) ? "couple_feed" : "couple_order");
+            notice.put("title", "1".equals(kitchenOrder.getRemoteFeed()) ? "TA 给你投喂了一份美食" : "TA 在情侣空间下单了");
             notice.put("content", "订单号 " + result.getOrderNo() + "，请在订单中查看");
             notice.put("bizId", result.getId());
             socialMapper.insertNotification(notice);
+        }
+        if (group != null)
+        {
+            for (Map<String, Object> member : socialMapper.selectGroupMembers(result.getGroupRoomId()))
+            {
+                Long memberId = mapLong(member, "userId", "user_id");
+                if (memberId == null || memberId.equals(userId)) continue;
+                Map<String, Object> notice = new java.util.HashMap<>();
+                notice.put("userId", memberId);
+                notice.put("type", "group_order");
+                notice.put("title", "聚餐房间已经下单");
+                notice.put("content", String.valueOf(group.get("title")) + "，订单号 " + result.getOrderNo());
+                notice.put("bizId", result.getId());
+                socialMapper.insertNotification(notice);
+            }
         }
         AjaxResult ajax = AjaxResult.success("下单成功");
         ajax.put("orderId", result.getId());

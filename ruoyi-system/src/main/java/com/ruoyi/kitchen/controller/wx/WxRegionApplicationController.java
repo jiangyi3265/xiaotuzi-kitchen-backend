@@ -17,6 +17,7 @@ import com.ruoyi.kitchen.util.WxTokenService;
 public class WxRegionApplicationController {
     @Autowired private KitchenRegionApplicationMapper mapper;
     @Autowired private WxTokenService tokenService;
+    @Anonymous @GetMapping("/opened") public AjaxResult opened() { return AjaxResult.success(mapper.selectEnabledRegions()); }
     @Anonymous @GetMapping("/status") public AjaxResult status(KitchenRegionApplication q, HttpServletRequest request) {
         boolean opened=StringUtils.isNotBlank(q.getProvince())&&StringUtils.isNotBlank(q.getCity())&&StringUtils.isNotBlank(q.getDistrict())&&mapper.countEnabledRegion(q)>0;
         Long uid=tokenService.getUserId(request); KitchenRegionApplication latest=uid==null?null:mapper.selectLatestByUser(uid);

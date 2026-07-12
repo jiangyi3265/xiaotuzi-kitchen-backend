@@ -8,6 +8,7 @@ public interface KitchenRegionApplicationMapper {
     KitchenRegionApplication selectById(Long id);
     KitchenRegionApplication selectLatestByUser(Long wxUserId);
     int countEnabledRegion(KitchenRegionApplication query);
+    List<KitchenRegionApplication> selectEnabledRegions();
     int insert(KitchenRegionApplication application);
     int audit(KitchenRegionApplication application);
     int updateEnabled(KitchenRegionApplication application);
