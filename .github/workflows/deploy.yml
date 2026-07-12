@@ -96,7 +96,8 @@ jobs:
                   if info.filename not in replacement and not stale_shadow:
                       dst.writestr(info, src.read(info.filename))
               for name, path in replacement.items():
-                  dst.write(path, name, compress_type=zipfile.ZIP_DEFLATED)
+                  compression = zipfile.ZIP_STORED if name.startswith('BOOT-INF/lib/') else zipfile.ZIP_DEFLATED
+                  dst.write(path, name, compress_type=compression)
           with zipfile.ZipFile(rebuilt, 'r') as check:
               for name, path in replacement.items():
                   with open(path, 'rb') as source:
