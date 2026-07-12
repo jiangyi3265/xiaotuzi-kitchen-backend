@@ -43,9 +43,7 @@ jobs:
           PORT="${SERVER_PORT:-22}"
           DEPLOY_PATH="${SERVER_DEPLOY_PATH:-/opt/xiaotuzi-kitchen/current}"
           ARCHIVE_NAME="xiaotuzi-backend-${GITHUB_SHA}.tgz"
-          JAR_NAME="xiaotuzi-backend-${GITHUB_SHA}.jar"
-          JAR_SIZE="$(stat -c%s ruoyi-admin/target/ruoyi-admin.jar)"
-          JAR_SHA256="$(sha256sum ruoyi-admin/target/ruoyi-admin.jar | cut -d' ' -f1)"
+          OVERLAY_NAME="xiaotuzi-overlay-${GITHUB_SHA}.tgz"
 
           mkdir -p ~/.ssh
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/xiaotuzi_deploy_key
@@ -56,11 +54,16 @@ jobs:
             --exclude='target' \
             --exclude='*/target' \
             -czf "/tmp/$ARCHIVE_NAME" .
+          mkdir -p /tmp/backend-overlay/BOOT-INF/classes
+          for module in ruoyi-common ruoyi-system ruoyi-framework ruoyi-admin; do
+            if [ -d "$module/target/classes" ]; then cp -a "$module/target/classes/." /tmp/backend-overlay/BOOT-INF/classes/; fi
+          done
+          tar -czf "/tmp/$OVERLAY_NAME" -C /tmp/backend-overlay .
           scp -o BatchMode=yes -o ConnectTimeout=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "/tmp/$ARCHIVE_NAME" "$SERVER_USER@$SERVER_HOST:/tmp/$ARCHIVE_NAME"
-          scp -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" ruoyi-admin/target/ruoyi-admin.jar "$SERVER_USER@$SERVER_HOST:/tmp/$JAR_NAME"
+          scp -o BatchMode=yes -o ConnectTimeout=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "/tmp/$OVERLAY_NAME" "$SERVER_USER@$SERVER_HOST:/tmp/$OVERLAY_NAME"
 
           ssh -i ~/.ssh/xiaotuzi_deploy_key -p "$PORT" "$SERVER_USER@$SERVER_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' JAR_NAME='$JAR_NAME' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' bash -s" <<'EOF'
+            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' OVERLAY_NAME='$OVERLAY_NAME' bash -s" <<'EOF'
           set -euo pipefail
 
           TARGET_DIR="$DEPLOY_PATH/RuoYi-Vue"
@@ -69,9 +72,34 @@ jobs:
           tar -xzf "/tmp/$ARCHIVE_NAME" -C "$TARGET_DIR"
           rm -f "/tmp/$ARCHIVE_NAME"
           mkdir -p "$TARGET_DIR/deploy-artifact"
-          mv "/tmp/$JAR_NAME" "$TARGET_DIR/deploy-artifact/app.jar"
-          test "$(stat -c%s "$TARGET_DIR/deploy-artifact/app.jar")" = "$JAR_SIZE"
-          test "$(sha256sum "$TARGET_DIR/deploy-artifact/app.jar" | cut -d' ' -f1)" = "$JAR_SHA256"
+          OVERLAY_DIR="$(mktemp -d)"
+          tar -xzf "/tmp/$OVERLAY_NAME" -C "$OVERLAY_DIR"
+          rm -f "/tmp/$OVERLAY_NAME"
+          BASE_CONTAINER="$(docker compose -f "$DEPLOY_PATH/docker-compose.deploy.yml" ps -q backend)"
+          test -n "$BASE_CONTAINER"
+          docker cp "$BASE_CONTAINER:/app/app.jar" "$TARGET_DIR/deploy-artifact/app.jar"
+          python3 - "$TARGET_DIR/deploy-artifact/app.jar" "$OVERLAY_DIR" <<'PY'
+          import os, sys, zipfile
+          jar, overlay = sys.argv[1:]
+          replacement = {}
+          for root, _, files in os.walk(overlay):
+              for name in files:
+                  path = os.path.join(root, name)
+                  replacement[os.path.relpath(path, overlay).replace(os.sep, '/')] = path
+          rebuilt = jar + '.new'
+          with zipfile.ZipFile(jar, 'r') as src, zipfile.ZipFile(rebuilt, 'w') as dst:
+              for info in src.infolist():
+                  if info.filename not in replacement:
+                      dst.writestr(info, src.read(info.filename))
+              for name, path in replacement.items():
+                  dst.write(path, name, compress_type=zipfile.ZIP_DEFLATED)
+          with zipfile.ZipFile(rebuilt, 'r') as check:
+              for name, path in replacement.items():
+                  with open(path, 'rb') as source:
+                      assert check.read(name) == source.read(), name
+          os.replace(rebuilt, jar)
+          PY
+          rm -rf "$OVERLAY_DIR"
 
           cd "$DEPLOY_PATH"
 
