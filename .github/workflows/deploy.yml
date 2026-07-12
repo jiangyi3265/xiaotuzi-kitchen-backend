@@ -49,6 +49,8 @@ jobs:
           ARCHIVE_NAME="xiaotuzi-backend-${GITHUB_SHA}.tgz"
           RELEASE_TAG="deploy-${GITHUB_SHA}"
           ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/app.jar"
+          JAR_SIZE="$(stat -c%s ruoyi-admin/target/ruoyi-admin.jar)"
+          JAR_SHA256="$(sha256sum ruoyi-admin/target/ruoyi-admin.jar | cut -d' ' -f1)"
 
           mkdir -p ~/.ssh
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/xiaotuzi_deploy_key
@@ -65,7 +67,7 @@ jobs:
           scp -o BatchMode=yes -o ConnectTimeout=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "/tmp/$ARCHIVE_NAME" "$SERVER_USER@$SERVER_HOST:/tmp/$ARCHIVE_NAME"
 
           ssh -i ~/.ssh/xiaotuzi_deploy_key -p "$PORT" "$SERVER_USER@$SERVER_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' ASSET_URL='$ASSET_URL' bash -s" <<'EOF'
+            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' ASSET_URL='$ASSET_URL' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' bash -s" <<'EOF'
           set -euo pipefail
 
           TARGET_DIR="$DEPLOY_PATH/RuoYi-Vue"
@@ -74,7 +76,22 @@ jobs:
           tar -xzf "/tmp/$ARCHIVE_NAME" -C "$TARGET_DIR"
           rm -f "/tmp/$ARCHIVE_NAME"
           mkdir -p "$TARGET_DIR/deploy-artifact"
-          curl -fL --retry 5 --retry-delay 2 "$ASSET_URL" -o "$TARGET_DIR/deploy-artifact/app.jar"
+          CHUNK_SIZE=10000000
+          pids=()
+          starts=()
+          for start in $(seq 0 "$CHUNK_SIZE" $((JAR_SIZE - 1))); do
+            end=$((start + CHUNK_SIZE - 1))
+            if [ "$end" -ge "$JAR_SIZE" ]; then end=$((JAR_SIZE - 1)); fi
+            starts+=("$start")
+            curl -fL --retry 5 --retry-delay 2 --range "$start-$end" "$ASSET_URL" -o "$TARGET_DIR/deploy-artifact/part.$start" &
+            pids+=("$!")
+          done
+          for pid in "${pids[@]}"; do wait "$pid"; done
+          : > "$TARGET_DIR/deploy-artifact/app.jar"
+          for start in "${starts[@]}"; do cat "$TARGET_DIR/deploy-artifact/part.$start" >> "$TARGET_DIR/deploy-artifact/app.jar"; done
+          test "$(stat -c%s "$TARGET_DIR/deploy-artifact/app.jar")" = "$JAR_SIZE"
+          test "$(sha256sum "$TARGET_DIR/deploy-artifact/app.jar" | cut -d' ' -f1)" = "$JAR_SHA256"
+          rm -f "$TARGET_DIR/deploy-artifact"/part.*
 
           cd "$DEPLOY_PATH"
 
