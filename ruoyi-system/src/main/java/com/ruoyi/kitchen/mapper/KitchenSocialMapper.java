@@ -21,6 +21,10 @@ public interface KitchenSocialMapper {
     int insertCouple(Map<String,Object> p);
     int bindCouplePartner(@Param("id") Long id,@Param("userId") Long userId);
     int unbindCouple(@Param("id") Long id,@Param("userId") Long userId);
+    List<Map<String,Object>> selectCoupleItems(Long coupleId);
+    int upsertCoupleItem(Map<String,Object> p);
+    int deleteCoupleItem(@Param("coupleId") Long coupleId,@Param("dishId") Long dishId,@Param("userId") Long userId);
+    int clearCoupleItems(Long coupleId);
     List<Map<String,Object>> selectAnniversaries(Long coupleId);
     int insertAnniversary(Map<String,Object> p);
     int addFeedCount(Long id);

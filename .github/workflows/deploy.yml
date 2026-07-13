@@ -115,7 +115,8 @@ jobs:
             RuoYi-Vue/sql/kitchen_patch_20260711_social_spaces.sql \
             RuoYi-Vue/sql/kitchen_patch_20260712_service_application.sql \
             RuoYi-Vue/sql/kitchen_patch_20260713_feedback_market.sql \
-            RuoYi-Vue/sql/kitchen_patch_20260713_today_schedule.sql
+            RuoYi-Vue/sql/kitchen_patch_20260713_today_schedule.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260713_couple_cart.sql
           do
             if [ -f "$sql" ]; then
               docker exec -i xiaotuzi-mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" ha' < "$sql"
@@ -131,8 +132,8 @@ jobs:
           done
           curl -fsS http://127.0.0.1:18081/api/wx/shop/info >/dev/null
 
-          TABLE_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.tables where table_schema=database() and table_name in (\"kitchen_region_application\",\"kitchen_service_application\",\"kitchen_feedback\",\"kitchen_group_room\",\"kitchen_group_member\",\"kitchen_group_item\",\"kitchen_couple_space\",\"kitchen_couple_anniversary\",\"kitchen_user_notification\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
-          test "$TABLE_COUNT" = "9"
+          TABLE_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.tables where table_schema=database() and table_name in (\"kitchen_region_application\",\"kitchen_service_application\",\"kitchen_feedback\",\"kitchen_group_room\",\"kitchen_group_member\",\"kitchen_group_item\",\"kitchen_couple_space\",\"kitchen_couple_anniversary\",\"kitchen_couple_item\",\"kitchen_user_notification\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
+          test "$TABLE_COUNT" = "10"
           COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_order\" and column_name in (\"group_room_id\",\"couple_space_id\",\"recipient_wx_user_id\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$COLUMN_COUNT" = "3"
           SHOP_COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_shop\" and column_name in (\"stock_group_qr\",\"stock_group_name\",\"stock_group_notice\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"

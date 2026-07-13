@@ -95,6 +95,10 @@ public class WxOrderController
             notice.put("content", "订单号 " + result.getOrderNo() + "，请在订单中查看");
             notice.put("bizId", result.getId());
             socialMapper.insertNotification(notice);
+            if ("1".equals(kitchenOrder.getCoupleOrder()) && !"1".equals(kitchenOrder.getRemoteFeed()))
+            {
+                socialMapper.clearCoupleItems(result.getCoupleSpaceId());
+            }
         }
         if (group != null)
         {
