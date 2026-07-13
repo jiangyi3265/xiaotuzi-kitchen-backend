@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kitchen.mapper.KitchenFeedbackMapper">
+  <resultMap id="Result" type="KitchenFeedback">
+    <id property="id" column="id"/><result property="wxUserId" column="wx_user_id"/><result property="userNickname" column="user_nickname"/>
+    <result property="feedbackType" column="feedback_type"/><result property="content" column="content"/><result property="contact" column="contact"/>
+    <result property="images" column="images"/><result property="handleStatus" column="handle_status"/><result property="reply" column="reply"/>
+    <result property="createTime" column="create_time"/><result property="updateTime" column="update_time"/>
+  </resultMap>
+  <sql id="selectVo">select f.*,u.nickname user_nickname from kitchen_feedback f left join kitchen_wx_user u on u.id=f.wx_user_id</sql>
+  <select id="selectList" resultMap="Result">
+    <include refid="selectVo"/><where>
+      <if test="feedbackType != null and feedbackType != ''">f.feedback_type=#{feedbackType}</if>
+      <if test="handleStatus != null and handleStatus != ''">and f.handle_status=#{handleStatus}</if>
+      <if test="content != null and content != ''">and f.content like concat('%',#{content},'%')</if>
+    </where> order by f.id desc
+  </select>
+  <select id="selectMy" resultMap="Result"><include refid="selectVo"/> where f.wx_user_id=#{wxUserId} order by f.id desc limit 20</select>
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">insert into kitchen_feedback(wx_user_id,feedback_type,content,contact,images,handle_status,create_time) values(#{wxUserId},#{feedbackType},#{content},#{contact},#{images},'0',sysdate())</insert>
+  <update id="handle">update kitchen_feedback set handle_status=#{handleStatus},reply=#{reply},update_time=sysdate() where id=#{id}</update>
+</mapper>

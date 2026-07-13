@@ -16,6 +16,9 @@
         <result property="storeAddress"  column="store_address"  />
         <result property="businessHours" column="business_hours" />
         <result property="storePhone"    column="store_phone"    />
+        <result property="stockGroupQr" column="stock_group_qr" />
+        <result property="stockGroupName" column="stock_group_name" />
+        <result property="stockGroupNotice" column="stock_group_notice" />
         <result property="announceEnabled" column="announce_enabled" />
         <result property="announceTitle"   column="announce_title"   />
         <result property="announceContent" column="announce_content" />
@@ -28,7 +31,7 @@
 
     <sql id="selectKitchenShopVo">
         select id, shop_name, avatar, banner, subtitle, invite_cover, invite_text, wechat_qr, alipay_qr,
-               store_name, store_address, business_hours, store_phone,
+               store_name, store_address, business_hours, store_phone, stock_group_qr, stock_group_name, stock_group_notice,
                announce_enabled, announce_title, announce_content,
                create_by, create_time, update_by, update_time, remark
         from kitchen_shop
@@ -46,10 +49,10 @@
 
     <insert id="insertKitchenShop" parameterType="KitchenShop" useGeneratedKeys="true" keyProperty="id">
         insert into kitchen_shop(shop_name, avatar, banner, subtitle, invite_cover, invite_text,
-            wechat_qr, alipay_qr, store_name, store_address, business_hours, store_phone,
+            wechat_qr, alipay_qr, store_name, store_address, business_hours, store_phone, stock_group_qr, stock_group_name, stock_group_notice,
             announce_enabled, announce_title, announce_content, remark, create_time)
         values(#{shopName}, #{avatar}, #{banner}, #{subtitle}, #{inviteCover}, #{inviteText},
-            #{wechatQr}, #{alipayQr}, #{storeName}, #{storeAddress}, #{businessHours}, #{storePhone},
+            #{wechatQr}, #{alipayQr}, #{storeName}, #{storeAddress}, #{businessHours}, #{storePhone}, #{stockGroupQr}, #{stockGroupName}, #{stockGroupNotice},
             #{announceEnabled}, #{announceTitle}, #{announceContent}, #{remark}, sysdate())
     </insert>
 
@@ -68,6 +71,9 @@
             <if test="storeAddress != null">store_address = #{storeAddress},</if>
             <if test="businessHours != null">business_hours = #{businessHours},</if>
             <if test="storePhone != null">store_phone = #{storePhone},</if>
+            <if test="stockGroupQr != null">stock_group_qr = #{stockGroupQr},</if>
+            <if test="stockGroupName != null">stock_group_name = #{stockGroupName},</if>
+            <if test="stockGroupNotice != null">stock_group_notice = #{stockGroupNotice},</if>
             <if test="announceEnabled != null">announce_enabled = #{announceEnabled},</if>
             <if test="announceTitle != null">announce_title = #{announceTitle},</if>
             <if test="announceContent != null">announce_content = #{announceContent},</if>

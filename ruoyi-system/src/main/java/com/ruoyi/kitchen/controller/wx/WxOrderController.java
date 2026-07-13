@@ -17,6 +17,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.kitchen.domain.KitchenOrder;
 import com.ruoyi.kitchen.service.IKitchenOrderService;
 import com.ruoyi.kitchen.mapper.KitchenSocialMapper;
+import com.ruoyi.kitchen.mapper.KitchenOrderMapper;
 import com.ruoyi.kitchen.util.WxPageUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
 
@@ -35,6 +36,9 @@ public class WxOrderController
 
     @Autowired
     private KitchenSocialMapper socialMapper;
+
+    @Autowired
+    private KitchenOrderMapper orderMapper;
 
     /**
      * 小程序：提交订单。
@@ -137,7 +141,7 @@ public class WxOrderController
     {
         Long userId = wxTokenService.getRequiredUserId(request);
         KitchenOrder order = kitchenOrderService.selectKitchenOrderById(id);
-        if (order == null || (!userId.equals(order.getWxUserId()) && !userId.equals(order.getRecipientWxUserId())))
+        if (order == null || orderMapper.countOrderViewer(id, userId) == 0)
         {
             return AjaxResult.error("订单不存在");
         }

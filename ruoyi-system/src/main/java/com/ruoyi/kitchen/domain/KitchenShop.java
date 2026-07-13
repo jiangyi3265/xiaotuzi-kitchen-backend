@@ -50,6 +50,15 @@ public class KitchenShop extends BaseEntity
     /** 门店电话 */
     private String storePhone;
 
+    /** 商家提前备货群二维码 */
+    private String stockGroupQr;
+
+    /** 商家提前备货群名称 */
+    private String stockGroupName;
+
+    /** 商家提前备货群说明 */
+    private String stockGroupNotice;
+
     /** 公告开关(0关 1开) */
     private String announceEnabled;
 
@@ -106,4 +115,10 @@ public class KitchenShop extends BaseEntity
 
     public String getStorePhone() { return storePhone; }
     public void setStorePhone(String storePhone) { this.storePhone = storePhone; }
+    public String getStockGroupQr() { return stockGroupQr; }
+    public void setStockGroupQr(String stockGroupQr) { this.stockGroupQr = stockGroupQr; }
+    public String getStockGroupName() { return stockGroupName; }
+    public void setStockGroupName(String stockGroupName) { this.stockGroupName = stockGroupName; }
+    public String getStockGroupNotice() { return stockGroupNotice; }
+    public void setStockGroupNotice(String stockGroupNotice) { this.stockGroupNotice = stockGroupNotice; }
 }
