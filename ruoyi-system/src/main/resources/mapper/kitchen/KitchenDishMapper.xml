@@ -21,6 +21,7 @@
         <result property="sales"        column="sales"         />
         <result property="orderNum"     column="order_num"     />
         <result property="status"       column="status"        />
+        <result property="todayType"    column="today_type"    />
         <result property="createBy"     column="create_by"     />
         <result property="createTime"   column="create_time"   />
         <result property="updateBy"     column="update_by"     />
@@ -55,7 +56,7 @@
     <sql id="selectKitchenDishVo">
         select d.id, d.dish_name, d.cover, d.category_id, c.cat_name as category_name, d.story, d.ingredients,
                d.virtual_price, d.has_specs, d.recipe_open, d.cooking_exp, d.prep_time, d.cook_time,
-               d.difficulty, d.portions, d.sales, d.order_num, d.status,
+               d.difficulty, d.portions, d.sales, d.order_num, d.status, d.today_type,
                d.create_by, d.create_time, d.update_by, d.update_time, d.remark
         from kitchen_dish d
         left join kitchen_category c on c.id = d.category_id
@@ -69,6 +70,7 @@
             <if test="categoryId != null">                  AND d.category_id = #{categoryId}</if>
             <if test="difficulty != null and difficulty != ''"> AND d.difficulty = #{difficulty}</if>
             <if test="status != null and status != ''">     AND d.status = #{status}</if>
+            <if test="todayType != null and todayType != ''"> AND d.today_type = #{todayType}</if>
         </where>
         order by d.order_num, d.id desc
     </select>
@@ -111,6 +113,7 @@
             <if test="portions != null">portions,</if>
             <if test="orderNum != null">order_num,</if>
             <if test="status != null">status,</if>
+            <if test="todayType != null">today_type,</if>
             <if test="remark != null">remark,</if>
             <if test="createBy != null">create_by,</if>
             sales, create_time
@@ -131,6 +134,7 @@
             <if test="portions != null">#{portions},</if>
             <if test="orderNum != null">#{orderNum},</if>
             <if test="status != null">#{status},</if>
+            <if test="todayType != null">#{todayType},</if>
             <if test="remark != null">#{remark},</if>
             <if test="createBy != null">#{createBy},</if>
             0, sysdate()
@@ -155,6 +159,7 @@
             <if test="portions != null">portions = #{portions},</if>
             <if test="orderNum != null">order_num = #{orderNum},</if>
             <if test="status != null">status = #{status},</if>
+            <if test="todayType != null">today_type = #{todayType},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = sysdate()

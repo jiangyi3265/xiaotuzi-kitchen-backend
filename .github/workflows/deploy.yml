@@ -114,7 +114,8 @@ jobs:
             RuoYi-Vue/sql/kitchen_patch_20260711_region_agent.sql \
             RuoYi-Vue/sql/kitchen_patch_20260711_social_spaces.sql \
             RuoYi-Vue/sql/kitchen_patch_20260712_service_application.sql \
-            RuoYi-Vue/sql/kitchen_patch_20260713_feedback_market.sql
+            RuoYi-Vue/sql/kitchen_patch_20260713_feedback_market.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260713_today_schedule.sql
           do
             if [ -f "$sql" ]; then
               docker exec -i xiaotuzi-mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" ha' < "$sql"
@@ -136,6 +137,8 @@ jobs:
           test "$COLUMN_COUNT" = "3"
           SHOP_COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_shop\" and column_name in (\"stock_group_qr\",\"stock_group_name\",\"stock_group_notice\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$SHOP_COLUMN_COUNT" = "3"
+          TODAY_COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_dish\" and column_name=\"today_type\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
+          test "$TODAY_COLUMN_COUNT" = "1"
           curl -fsS 'http://127.0.0.1:18081/api/wx/region/status?province=test&city=test&district=test' | grep -q '"code":200'
           curl -fsS 'http://127.0.0.1:18081/api/wx/region/opened' | grep -q '"code":200'
           curl -fsS 'http://127.0.0.1:18081/api/wx/service-application/my?applicationType=0' | grep -q '"code":401'

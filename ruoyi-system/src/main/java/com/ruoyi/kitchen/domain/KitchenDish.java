@@ -77,6 +77,10 @@ public class KitchenDish extends BaseEntity
     @Excel(name = "状态", readConverterExp = "0=下架,1=上架")
     private String status;
 
+    /** 今日安排类型（空=不展示 hotpot=火锅类 barbecue=烧烤） */
+    @Excel(name = "今日安排", readConverterExp = "hotpot=火锅类,barbecue=烧烤")
+    private String todayType;
+
     /** 规格组列表（非DB字段） */
     private List<KitchenDishSpec> specs = new ArrayList<>();
 
@@ -137,6 +141,9 @@ public class KitchenDish extends BaseEntity
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
+    public String getTodayType() { return todayType; }
+    public void setTodayType(String todayType) { this.todayType = todayType; }
+
     public List<KitchenDishSpec> getSpecs() { return specs; }
     public void setSpecs(List<KitchenDishSpec> specs) { this.specs = specs; }
 
@@ -151,6 +158,7 @@ public class KitchenDish extends BaseEntity
                 .append("categoryId", getCategoryId())
                 .append("ingredients", getIngredients())
                 .append("status", getStatus())
+                .append("todayType", getTodayType())
                 .append("sales", getSales())
                 .toString();
     }
