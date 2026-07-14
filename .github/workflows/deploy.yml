@@ -132,6 +132,10 @@ jobs:
           done
           curl -fsS http://127.0.0.1:18081/api/wx/shop/info >/dev/null
 
+          CAPTCHA_RESPONSE="$(curl -fsS http://127.0.0.1:18081/captchaImage)"
+          printf '%s' "$CAPTCHA_RESPONSE" | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['code']==200 and d.get('captchaEnabled') in (True,False); assert not d.get('captchaEnabled') or (d.get('uuid') and len(d.get('img',''))>100)"
+          curl -fsS http://127.0.0.1:18081/getInfo | grep -q '"code":401'
+
           TABLE_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.tables where table_schema=database() and table_name in (\"kitchen_region_application\",\"kitchen_service_application\",\"kitchen_feedback\",\"kitchen_group_room\",\"kitchen_group_member\",\"kitchen_group_item\",\"kitchen_couple_space\",\"kitchen_couple_anniversary\",\"kitchen_couple_item\",\"kitchen_user_notification\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$TABLE_COUNT" = "10"
           COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_order\" and column_name in (\"group_room_id\",\"couple_space_id\",\"recipient_wx_user_id\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"

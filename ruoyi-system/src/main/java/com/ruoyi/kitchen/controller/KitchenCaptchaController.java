@@ -1,4 +1,4 @@
-package com.ruoyi.web.controller.common;
+package com.ruoyi.kitchen.controller;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -21,12 +21,13 @@ import com.ruoyi.common.utils.uuid.IdUtils;
 import com.ruoyi.system.service.ISysConfigService;
 
 /**
- * 验证码操作处理
- * 
- * @author ruoyi
+ * 管理后台验证码。
+ *
+ * 控制器放在业务模块中，确保增量部署替换 ruoyi-system 包时该公开端点
+ * 与其他厨房管理接口一起被稳定扫描和发布。
  */
 @RestController
-public class CaptchaController
+public class KitchenCaptchaController
 {
     @Resource(name = "captchaProducer")
     private Producer captchaProducer;
@@ -36,11 +37,12 @@ public class CaptchaController
 
     @Autowired
     private RedisCache redisCache;
-    
+
     @Autowired
     private ISysConfigService configService;
+
     /**
-     * 生成验证码
+     * 生成管理后台登录验证码。
      */
     @GetMapping("/captchaImage")
     public AjaxResult getCode(HttpServletResponse response) throws IOException
@@ -53,42 +55,30 @@ public class CaptchaController
             return ajax;
         }
 
-        // 保存验证码信息
         String uuid = IdUtils.simpleUUID();
         String verifyKey = CacheConstants.CAPTCHA_CODE_KEY + uuid;
 
-        String capStr = null, code = null;
-        BufferedImage image = null;
-
-        // 生成验证码
+        String code;
+        BufferedImage image;
         String captchaType = RuoYiConfig.getCaptchaType();
         if ("math".equals(captchaType))
         {
             String capText = captchaProducerMath.createText();
-            capStr = capText.substring(0, capText.lastIndexOf("@"));
+            String capStr = capText.substring(0, capText.lastIndexOf("@"));
             code = capText.substring(capText.lastIndexOf("@") + 1);
             image = captchaProducerMath.createImage(capStr);
         }
-        else if ("char".equals(captchaType))
+        else
         {
-            capStr = code = captchaProducer.createText();
-            image = captchaProducer.createImage(capStr);
+            code = captchaProducer.createText();
+            image = captchaProducer.createImage(code);
         }
 
         redisCache.setCacheObject(verifyKey, code, Constants.CAPTCHA_EXPIRATION, TimeUnit.MINUTES);
-        // 转换流信息写出
-        FastByteArrayOutputStream os = new FastByteArrayOutputStream();
-        try
-        {
-            ImageIO.write(image, "jpg", os);
-        }
-        catch (IOException e)
-        {
-            return AjaxResult.error(e.getMessage());
-        }
-
+        FastByteArrayOutputStream output = new FastByteArrayOutputStream();
+        ImageIO.write(image, "jpg", output);
         ajax.put("uuid", uuid);
-        ajax.put("img", Base64.encode(os.toByteArray()));
+        ajax.put("img", Base64.encode(output.toByteArray()));
         return ajax;
     }
 }

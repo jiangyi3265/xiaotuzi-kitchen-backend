@@ -29,6 +29,12 @@
             <version>3.5.3</version>
         </dependency>
 
+        <!-- 管理后台登录验证码控制器随业务模块稳定部署 -->
+        <dependency>
+            <groupId>pro.fessional</groupId>
+            <artifactId>kaptcha</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>
