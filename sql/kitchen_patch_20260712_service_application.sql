@@ -23,11 +23,16 @@ create table if not exists kitchen_service_application (
 ) engine=InnoDB default charset=utf8mb4 comment='配送员与代炒厨师申请';
 
 set @kitchen_menu_id := (select menu_id from sys_menu where menu_name='私厨管理' order by menu_id limit 1);
+set @service_menu_id := (select menu_id from sys_menu where perms='kitchen:serviceApplication:list' order by menu_id limit 1);
+set @service_menu_id := coalesce(@service_menu_id,(select coalesce(max(menu_id),2100)+1 from sys_menu));
 insert into sys_menu(menu_id,menu_name,parent_id,order_num,path,component,query,route_name,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,remark)
-select 2090,'服务人员审核',@kitchen_menu_id,13,'serviceApplication','kitchen/serviceApplication/index',null,'ServiceApplication',1,0,'C','0','0','kitchen:serviceApplication:list','user', 'admin',sysdate(),'配送员与代炒厨师申请审核'
-where @kitchen_menu_id is not null and not exists(select 1 from sys_menu where menu_id=2090 or perms='kitchen:serviceApplication:list');
+select @service_menu_id,'服务人员审核',@kitchen_menu_id,13,'serviceApplication','kitchen/serviceApplication/index',null,'ServiceApplication',1,0,'C','0','0','kitchen:serviceApplication:list','user', 'admin',sysdate(),'配送员与代炒厨师申请审核'
+where @kitchen_menu_id is not null and not exists(select 1 from sys_menu where perms='kitchen:serviceApplication:list');
+set @service_menu_id := (select menu_id from sys_menu where perms='kitchen:serviceApplication:list' order by menu_id limit 1);
+set @service_audit_menu_id := (select menu_id from sys_menu where perms='kitchen:serviceApplication:audit' order by menu_id limit 1);
+set @service_audit_menu_id := coalesce(@service_audit_menu_id,(select coalesce(max(menu_id),2100)+1 from sys_menu));
 insert into sys_menu(menu_id,menu_name,parent_id,order_num,path,component,query,route_name,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,remark)
-select 2091,'服务人员审核操作',2090,1,'','','','',1,0,'F','0','0','kitchen:serviceApplication:audit','#','admin',sysdate(),''
-where exists(select 1 from sys_menu where menu_id=2090) and not exists(select 1 from sys_menu where menu_id=2091 or perms='kitchen:serviceApplication:audit');
-insert ignore into sys_role_menu(role_id,menu_id) select 1,2090;
-insert ignore into sys_role_menu(role_id,menu_id) select 1,2091;
+select @service_audit_menu_id,'服务人员审核操作',@service_menu_id,1,'','','','',1,0,'F','0','0','kitchen:serviceApplication:audit','#','admin',sysdate(),''
+where @service_menu_id is not null and not exists(select 1 from sys_menu where perms='kitchen:serviceApplication:audit');
+insert ignore into sys_role_menu(role_id,menu_id) select 1,menu_id from sys_menu where perms='kitchen:serviceApplication:list';
+insert ignore into sys_role_menu(role_id,menu_id) select 1,menu_id from sys_menu where perms='kitchen:serviceApplication:audit';
