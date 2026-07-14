@@ -20,7 +20,7 @@ create table if not exists kitchen_feedback (
   primary key(id), key idx_feedback_user(wx_user_id), key idx_feedback_status(handle_status)
 ) engine=InnoDB default charset=utf8mb4 comment='用户反馈与建议';
 
-set @kitchen_menu_id := (select menu_id from sys_menu where menu_name='私厨管理' order by menu_id limit 1);
+set @kitchen_menu_id := (select menu_id from sys_menu where menu_name in ('私房菜管理','厨房管理') order by field(menu_name,'私房菜管理','厨房管理') limit 1);
 set @feedback_menu_id := (select menu_id from sys_menu where perms='kitchen:feedback:list' order by menu_id limit 1);
 set @feedback_menu_id := coalesce(@feedback_menu_id,(select coalesce(max(menu_id),2100)+1 from sys_menu));
 insert into sys_menu(menu_id,menu_name,parent_id,order_num,path,component,query,route_name,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,remark)

@@ -22,7 +22,7 @@ create table if not exists kitchen_service_application (
   key idx_service_application_audit (audit_status)
 ) engine=InnoDB default charset=utf8mb4 comment='配送员与代炒厨师申请';
 
-set @kitchen_menu_id := (select menu_id from sys_menu where menu_name='私厨管理' order by menu_id limit 1);
+set @kitchen_menu_id := (select menu_id from sys_menu where menu_name in ('私房菜管理','厨房管理') order by field(menu_name,'私房菜管理','厨房管理') limit 1);
 set @service_menu_id := (select menu_id from sys_menu where perms='kitchen:serviceApplication:list' order by menu_id limit 1);
 set @service_menu_id := coalesce(@service_menu_id,(select coalesce(max(menu_id),2100)+1 from sys_menu));
 insert into sys_menu(menu_id,menu_name,parent_id,order_num,path,component,query,route_name,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,remark)
