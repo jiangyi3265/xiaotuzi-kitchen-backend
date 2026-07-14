@@ -114,6 +114,7 @@ public class WxOrderController
                 notice.put("bizId", result.getId());
                 socialMapper.insertNotification(notice);
             }
+            socialMapper.clearGroupItems(result.getGroupRoomId());
         }
         AjaxResult ajax = AjaxResult.success("下单成功");
         ajax.put("orderId", result.getId());
