@@ -21,11 +21,16 @@ create table if not exists kitchen_feedback (
 ) engine=InnoDB default charset=utf8mb4 comment='用户反馈与建议';
 
 set @kitchen_menu_id := (select menu_id from sys_menu where menu_name='私厨管理' order by menu_id limit 1);
+set @feedback_menu_id := (select menu_id from sys_menu where perms='kitchen:feedback:list' order by menu_id limit 1);
+set @feedback_menu_id := coalesce(@feedback_menu_id,(select coalesce(max(menu_id),2100)+1 from sys_menu));
 insert into sys_menu(menu_id,menu_name,parent_id,order_num,path,component,query,route_name,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,remark)
-select 2100,'反馈与建议',@kitchen_menu_id,14,'feedback','kitchen/feedback/index',null,'Feedback',1,0,'C','0','0','kitchen:feedback:list','message','admin',sysdate(),'小程序用户反馈处理'
-where @kitchen_menu_id is not null and not exists(select 1 from sys_menu where menu_id=2100 or perms='kitchen:feedback:list');
+select @feedback_menu_id,'反馈与建议',@kitchen_menu_id,14,'feedback','kitchen/feedback/index',null,'Feedback',1,0,'C','0','0','kitchen:feedback:list','message','admin',sysdate(),'小程序用户反馈处理'
+where @kitchen_menu_id is not null and not exists(select 1 from sys_menu where perms='kitchen:feedback:list');
+set @feedback_menu_id := (select menu_id from sys_menu where perms='kitchen:feedback:list' order by menu_id limit 1);
+set @feedback_handle_menu_id := (select menu_id from sys_menu where perms='kitchen:feedback:handle' order by menu_id limit 1);
+set @feedback_handle_menu_id := coalesce(@feedback_handle_menu_id,(select coalesce(max(menu_id),2100)+1 from sys_menu));
 insert into sys_menu(menu_id,menu_name,parent_id,order_num,path,component,query,route_name,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,remark)
-select 2101,'反馈处理',2100,1,'','','','',1,0,'F','0','0','kitchen:feedback:handle','#','admin',sysdate(),''
-where exists(select 1 from sys_menu where menu_id=2100) and not exists(select 1 from sys_menu where menu_id=2101 or perms='kitchen:feedback:handle');
-insert ignore into sys_role_menu(role_id,menu_id) select 1,2100;
-insert ignore into sys_role_menu(role_id,menu_id) select 1,2101;
+select @feedback_handle_menu_id,'反馈处理',@feedback_menu_id,1,'','','','',1,0,'F','0','0','kitchen:feedback:handle','#','admin',sysdate(),''
+where @feedback_menu_id is not null and not exists(select 1 from sys_menu where perms='kitchen:feedback:handle');
+insert ignore into sys_role_menu(role_id,menu_id) select 1,menu_id from sys_menu where perms='kitchen:feedback:list';
+insert ignore into sys_role_menu(role_id,menu_id) select 1,menu_id from sys_menu where perms='kitchen:feedback:handle';
