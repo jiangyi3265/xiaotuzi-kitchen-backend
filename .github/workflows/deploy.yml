@@ -66,7 +66,12 @@ jobs:
           trap 'gh release delete "$RELEASE_TAG" --cleanup-tag --yes >/dev/null 2>&1 || true' EXIT
           scp -o BatchMode=yes -o ConnectTimeout=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "/tmp/$ARCHIVE_NAME" "$SERVER_USER@$SERVER_HOST:/tmp/$ARCHIVE_NAME"
 
-          ssh -i ~/.ssh/xiaotuzi_deploy_key -p "$PORT" "$SERVER_USER@$SERVER_HOST" \
+          ssh \
+            -o ServerAliveInterval=20 \
+            -o ServerAliveCountMax=120 \
+            -i ~/.ssh/xiaotuzi_deploy_key \
+            -p "$PORT" \
+            "$SERVER_USER@$SERVER_HOST" \
             "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' ASSET_URL='$ASSET_URL' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' bash -s" <<'EOF'
           set -euo pipefail
 
