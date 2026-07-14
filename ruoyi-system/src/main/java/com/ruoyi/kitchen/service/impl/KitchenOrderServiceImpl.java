@@ -1,7 +1,9 @@
 package com.ruoyi.kitchen.service.impl;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,6 +78,26 @@ public class KitchenOrderServiceImpl implements IKitchenOrderService
 
         // 配送/代炒需要收货信息
         String serviceType = kitchenOrder.getServiceType();
+        if (!("0".equals(serviceType) || "1".equals(serviceType) || "2".equals(serviceType)))
+        {
+            throw new ServiceException("请选择正确的用餐类型");
+        }
+        if (!(StringUtils.isBlank(kitchenOrder.getShareFlag())
+                || "0".equals(kitchenOrder.getShareFlag()) || "1".equals(kitchenOrder.getShareFlag())))
+        {
+            throw new ServiceException("订单分享参数不正确");
+        }
+        if (!(StringUtils.isBlank(kitchenOrder.getRemoteFeed())
+                || "0".equals(kitchenOrder.getRemoteFeed()) || "1".equals(kitchenOrder.getRemoteFeed()))
+                || !(StringUtils.isBlank(kitchenOrder.getCoupleOrder())
+                || "0".equals(kitchenOrder.getCoupleOrder()) || "1".equals(kitchenOrder.getCoupleOrder())))
+        {
+            throw new ServiceException("订单来源参数不正确");
+        }
+        if (kitchenOrder.getRemark() != null && kitchenOrder.getRemark().length() > 500)
+        {
+            throw new ServiceException("备注最多填写500个字");
+        }
         if ("0".equals(serviceType) || "1".equals(serviceType))
         {
             if (StringUtils.isBlank(kitchenOrder.getReceiverName())
@@ -84,25 +106,48 @@ public class KitchenOrderServiceImpl implements IKitchenOrderService
             {
                 throw new ServiceException("请完善收货人/电话/地址");
             }
+            kitchenOrder.setReceiverName(kitchenOrder.getReceiverName().trim());
+            kitchenOrder.setReceiverPhone(kitchenOrder.getReceiverPhone().trim());
+            kitchenOrder.setReceiverAddress(kitchenOrder.getReceiverAddress().trim());
+            if (kitchenOrder.getReceiverName().length() > 32)
+            {
+                throw new ServiceException("收货人姓名最多32个字");
+            }
+            if (!kitchenOrder.getReceiverPhone().matches("^1\\d{10}$"))
+            {
+                throw new ServiceException("请填写正确的手机号");
+            }
+            if (kitchenOrder.getReceiverAddress().length() > 255)
+            {
+                throw new ServiceException("收货地址最多255个字");
+            }
         }
 
         int totalCount = 0;
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         // 以服务端数据为准，重新核对菜品快照与价格，防止前端篡改
+        Set<Long> dishIds = new HashSet<>();
         for (KitchenOrderItem item : items)
         {
+            if (item == null || item.getDishId() == null)
+            {
+                throw new ServiceException("订单中存在无效菜品");
+            }
+            if (!dishIds.add(item.getDishId()))
+            {
+                throw new ServiceException("订单中存在重复菜品，请刷新后重试");
+            }
             KitchenDish dish = kitchenDishMapper.selectKitchenDishById(item.getDishId());
             if (dish == null || !"1".equals(dish.getStatus()))
             {
                 throw new ServiceException("菜品不存在或已下架: " + item.getDishId());
             }
-            int qty = item.getQuantity() == null || item.getQuantity() < 1 ? 1 : item.getQuantity();
-            if (qty > 99)
+            if (item.getQuantity() == null || item.getQuantity() < 1 || item.getQuantity() > 999)
             {
-                // 单品数量上限，防止刷单/整数溢出
-                qty = 99;
+                throw new ServiceException("单个菜品数量必须在1到999之间");
             }
+            int qty = item.getQuantity();
             BigDecimal price = dish.getVirtualPrice() == null ? BigDecimal.ZERO : dish.getVirtualPrice();
             item.setDishName(dish.getDishName());
             item.setDishCover(dish.getCover());
@@ -125,6 +170,14 @@ public class KitchenOrderServiceImpl implements IKitchenOrderService
                 totalAmount = totalAmount.add(chef.getExtraPrice());
             }
         }
+        else if ("1".equals(serviceType))
+        {
+            throw new ServiceException("请选择代炒厨师");
+        }
+        else
+        {
+            kitchenOrder.setChefId(null);
+        }
 
         // 同城配送：校验配送员并叠加配送费
         if ("0".equals(serviceType) && kitchenOrder.getRiderId() != null)
@@ -138,6 +191,10 @@ public class KitchenOrderServiceImpl implements IKitchenOrderService
             {
                 totalAmount = totalAmount.add(rider.getDeliveryFee());
             }
+        }
+        else if (!"0".equals(serviceType))
+        {
+            kitchenOrder.setRiderId(null);
         }
 
         kitchenOrder.setOrderNo(generateOrderNo());

@@ -1,5 +1,7 @@
 package com.ruoyi.kitchen.controller.wx;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +17,7 @@ import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.kitchen.domain.KitchenOrder;
+import com.ruoyi.kitchen.domain.KitchenOrderItem;
 import com.ruoyi.kitchen.service.IKitchenOrderService;
 import com.ruoyi.kitchen.mapper.KitchenSocialMapper;
 import com.ruoyi.kitchen.mapper.KitchenOrderMapper;
@@ -50,10 +53,22 @@ public class WxOrderController
     {
         Long userId = wxTokenService.getRequiredUserId(request);
         kitchenOrder.setWxUserId(userId);
+        boolean remoteFeed = "1".equals(kitchenOrder.getRemoteFeed());
+        boolean coupleOrder = "1".equals(kitchenOrder.getCoupleOrder());
+        if (kitchenOrder.getGroupRoomId() != null && (remoteFeed || coupleOrder))
+        {
+            return AjaxResult.error("多人聚餐与情侣订单不能同时提交");
+        }
+        if (remoteFeed && !coupleOrder)
+        {
+            return AjaxResult.error("异地投喂订单参数不正确");
+        }
+
         Map<String, Object> group = null;
         if (kitchenOrder.getGroupRoomId() != null)
         {
-            group = socialMapper.selectGroupRoomById(kitchenOrder.getGroupRoomId());
+            // 锁住房间并以服务端共同购物车为准，避免两位成员同时提交生成重复订单。
+            group = socialMapper.selectGroupRoomByIdForUpdate(kitchenOrder.getGroupRoomId());
             if (group == null)
             {
                 return AjaxResult.error("聚餐房间不存在或已经结束");
@@ -62,11 +77,18 @@ public class WxOrderController
             {
                 return AjaxResult.error("你不在该聚餐房间");
             }
+            List<Map<String, Object>> cartItems = socialMapper.selectGroupItems(kitchenOrder.getGroupRoomId());
+            if (cartItems == null || cartItems.isEmpty())
+            {
+                return AjaxResult.error("共同购物车为空，请重新选择菜品");
+            }
+            kitchenOrder.setItems(toOrderItems(cartItems));
         }
         Map<String, Object> couple = null;
-        if ("1".equals(kitchenOrder.getRemoteFeed()) || "1".equals(kitchenOrder.getCoupleOrder()))
+        if (remoteFeed || coupleOrder)
         {
-            couple = socialMapper.selectCoupleByUser(userId);
+            // 情侣共同订单同样加行锁，提交后清空菜单，第二个并发提交会被明确拒绝。
+            couple = socialMapper.selectCoupleByUserForUpdate(userId);
             if (couple == null)
             {
                 return AjaxResult.error("请先绑定情侣空间");
@@ -80,6 +102,15 @@ public class WxOrderController
             }
             kitchenOrder.setCoupleSpaceId(mapLong(couple, "id"));
             kitchenOrder.setRecipientWxUserId(recipient);
+            if (coupleOrder && !remoteFeed)
+            {
+                List<Map<String, Object>> sharedItems = socialMapper.selectCoupleItems(kitchenOrder.getCoupleSpaceId());
+                if (sharedItems == null || sharedItems.isEmpty())
+                {
+                    return AjaxResult.error("情侣共同菜单为空，请重新选择菜品");
+                }
+                kitchenOrder.setItems(toOrderItems(sharedItems));
+            }
         }
         KitchenOrder result = kitchenOrderService.submitOrder(kitchenOrder);
         if (couple != null)
@@ -120,6 +151,8 @@ public class WxOrderController
         ajax.put("orderId", result.getId());
         ajax.put("orderNo", result.getOrderNo());
         ajax.put("totalAmount", result.getTotalAmount());
+        ajax.put("groupRoomId", result.getGroupRoomId());
+        ajax.put("coupleSpaceId", result.getCoupleSpaceId());
         return ajax;
     }
 
@@ -214,5 +247,44 @@ public class WxOrderController
             }
         }
         return null;
+    }
+
+    /**
+     * 将多人/情侣共享菜单汇总为订单明细。情侣双方可能选择同一道菜，因此按菜品合并数量。
+     */
+    private List<KitchenOrderItem> toOrderItems(List<Map<String, Object>> source)
+    {
+        Map<Long, Integer> quantities = new LinkedHashMap<>();
+        for (Map<String, Object> row : source)
+        {
+            Long dishId = mapLong(row, "dishId", "dish_id");
+            if (dishId == null)
+            {
+                continue;
+            }
+            Object rawQuantity = row.get("quantity");
+            int quantity;
+            try
+            {
+                quantity = Integer.parseInt(String.valueOf(rawQuantity));
+            }
+            catch (Exception e)
+            {
+                continue;
+            }
+            if (quantity > 0)
+            {
+                quantities.merge(dishId, quantity, Integer::sum);
+            }
+        }
+        List<KitchenOrderItem> result = new ArrayList<>();
+        for (Map.Entry<Long, Integer> entry : quantities.entrySet())
+        {
+            KitchenOrderItem item = new KitchenOrderItem();
+            item.setDishId(entry.getKey());
+            item.setQuantity(entry.getValue());
+            result.add(item);
+        }
+        return result;
     }
 }

@@ -8,7 +8,9 @@ public interface KitchenSocialMapper {
     int insertGroupRoom(Map<String,Object> p);
     int insertGroupMember(Map<String,Object> p);
     Map<String,Object> selectGroupRoomByCode(String roomCode);
+    Map<String,Object> selectGroupRoomByCodeForUpdate(String roomCode);
     Map<String,Object> selectGroupRoomById(Long id);
+    Map<String,Object> selectGroupRoomByIdForUpdate(Long id);
     Map<String,Object> selectGroupRoomAnyById(Long id);
     int countGroupMember(@Param("roomId") Long roomId,@Param("userId") Long userId);
     List<Map<String,Object>> selectGroupMembers(Long roomId);
@@ -21,6 +23,7 @@ public interface KitchenSocialMapper {
     int clearGroupItems(Long roomId);
     int finishGroup(@Param("id") Long id,@Param("ownerUserId") Long ownerUserId);
     Map<String,Object> selectCoupleByUser(Long userId);
+    Map<String,Object> selectCoupleByUserForUpdate(Long userId);
     Map<String,Object> selectCoupleByCode(String inviteCode);
     int insertCouple(Map<String,Object> p);
     int bindCouplePartner(@Param("id") Long id,@Param("userId") Long userId);
