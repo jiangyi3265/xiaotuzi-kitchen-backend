@@ -50,22 +50,45 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/xiaotuzi_deploy_key
           chmod 600 ~/.ssh/xiaotuzi_deploy_key
-          ssh-keyscan -p "$PORT" -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+          : > ~/.ssh/known_hosts
+          for attempt in $(seq 1 30); do
+            if ssh-keyscan -T 10 -p "$PORT" -H "$SERVER_HOST" > ~/.ssh/known_hosts 2>/dev/null; then
+              break
+            fi
+            echo "Waiting for SSH to recover (attempt $attempt/30)"
+            sleep 20
+          done
+          test -s ~/.ssh/known_hosts
           tar \
             --exclude='.git' \
             --exclude='target' \
             --exclude='*/target' \
             -czf "/tmp/$ARCHIVE_NAME" .
-          scp -o BatchMode=yes -o ConnectTimeout=20 -i ~/.ssh/xiaotuzi_deploy_key -P "$PORT" "/tmp/$ARCHIVE_NAME" "$SERVER_USER@$SERVER_HOST:/tmp/$ARCHIVE_NAME"
-          scp \
-            -o BatchMode=yes \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=20 \
-            -o ServerAliveCountMax=120 \
-            -i ~/.ssh/xiaotuzi_deploy_key \
-            -P "$PORT" \
-            ruoyi-admin/target/ruoyi-admin.jar \
-            "$SERVER_USER@$SERVER_HOST:/tmp/$JAR_NAME"
+
+          transfer_file() {
+            local source="$1"
+            local destination="$2"
+            for attempt in $(seq 1 10); do
+              if scp \
+                -o BatchMode=yes \
+                -o ConnectTimeout=30 \
+                -o ServerAliveInterval=20 \
+                -o ServerAliveCountMax=120 \
+                -i ~/.ssh/xiaotuzi_deploy_key \
+                -P "$PORT" \
+                "$source" \
+                "$SERVER_USER@$SERVER_HOST:$destination"
+              then
+                return 0
+              fi
+              echo "Retrying artifact transfer (attempt $attempt/10)"
+              sleep 20
+            done
+            return 1
+          }
+
+          transfer_file "/tmp/$ARCHIVE_NAME" "/tmp/$ARCHIVE_NAME"
+          transfer_file "ruoyi-admin/target/ruoyi-admin.jar" "/tmp/$JAR_NAME"
 
           ssh \
             -o ServerAliveInterval=20 \
