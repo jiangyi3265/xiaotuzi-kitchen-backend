@@ -17,6 +17,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenSharePost;
 import com.ruoyi.kitchen.mapper.KitchenPostLikeMapper;
 import com.ruoyi.kitchen.service.IKitchenSharePostService;
+import com.ruoyi.kitchen.util.WxContentFilter;
 import com.ruoyi.kitchen.util.WxPageUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
 
@@ -39,7 +40,7 @@ public class WxShareController
     private WxTokenService wxTokenService;
 
     /** 发布是否需要审核：1 需要(默认待审核) 0 不需要(直接通过) */
-    @Value("${wx.shareAudit:0}")
+    @Value("${wx.shareAudit:1}")
     private String shareAudit;
 
     /**
@@ -74,6 +75,10 @@ public class WxShareController
         if (StringUtils.isBlank(post.getContent()) && StringUtils.isBlank(post.getImages()))
         {
             return AjaxResult.error("请填写内容或上传图片");
+        }
+        if (WxContentFilter.containsBlockedContent(post.getTitle(), post.getContent(), post.getTags()))
+        {
+            return AjaxResult.error("内容包含不适宜信息，请修改后再发布");
         }
         post.setWxUserId(userId);
         post.setAuditStatus("1".equals(shareAudit) ? "0" : "1");

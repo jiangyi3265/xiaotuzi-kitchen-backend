@@ -15,6 +15,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenComment;
 import com.ruoyi.kitchen.service.IKitchenCommentService;
+import com.ruoyi.kitchen.util.WxContentFilter;
 import com.ruoyi.kitchen.util.WxPageUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
 
@@ -34,7 +35,7 @@ public class WxCommentController
     private WxTokenService wxTokenService;
 
     /** 评论是否需要审核：1 需要(默认待审核) 0 不需要(直接通过) */
-    @Value("${wx.shareAudit:0}")
+    @Value("${wx.shareAudit:1}")
     private String shareAudit;
 
     /**
@@ -65,6 +66,10 @@ public class WxCommentController
         if (StringUtils.isBlank(comment.getContent()))
         {
             return AjaxResult.error("请填写评论内容");
+        }
+        if (WxContentFilter.containsBlockedContent(comment.getContent()))
+        {
+            return AjaxResult.error("评论包含不适宜信息，请修改后再发送");
         }
         comment.setWxUserId(userId);
         comment.setAuditStatus("1".equals(shareAudit) ? "0" : "1");
