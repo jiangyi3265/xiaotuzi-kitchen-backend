@@ -276,6 +276,8 @@ jobs:
           test "$FEATURE_CONFIG_COUNT" = "1"
           FEATURE_MENU_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from sys_menu where component=\"applet/switch/index\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$FEATURE_MENU_COUNT" = "1"
+          FEATURE_MENU_PARENT_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from sys_menu child join sys_menu parent on parent.menu_id=child.parent_id where child.component=\"applet/switch/index\" and parent.menu_name in (\"私房菜管理\",\"厨房管理\") and parent.menu_type=\"M\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
+          test "$FEATURE_MENU_PARENT_COUNT" = "1"
           curl -fsS http://127.0.0.1:18081/api/wx/common/features | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['code']==200 and isinstance(d.get('enabled'), bool)"
           curl -fsS 'http://127.0.0.1:18081/api/wx/region/status?province=test&city=test&district=test' | grep -q '"code":200'
           curl -fsS 'http://127.0.0.1:18081/api/wx/region/opened' | grep -q '"code":200'

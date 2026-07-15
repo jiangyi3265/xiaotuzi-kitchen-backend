@@ -16,20 +16,22 @@ where not exists (
   select 1 from sys_config where config_key = 'wx.feature.enabled'
 );
 
+set @kitchen_menu_id := (
+  select menu_id
+  from sys_menu
+  where menu_name in ('私房菜管理', '厨房管理') and menu_type = 'M'
+  order by field(menu_name, '私房菜管理', '厨房管理'), menu_id
+  limit 1
+);
+
 insert into sys_menu
   (menu_name, parent_id, order_num, path, component, query, route_name,
    is_frame, is_cache, menu_type, visible, status, perms, icon,
    create_by, create_time, update_by, update_time, remark)
 select
   '小程序功能开关',
-  coalesce((
-    select menu_id
-    from sys_menu
-    where menu_name = '系统管理' and menu_type = 'M'
-    order by menu_id
-    limit 1
-  ), 1),
-  100,
+  @kitchen_menu_id,
+  15,
   'appletSwitch',
   'applet/switch/index',
   '',
@@ -47,6 +49,14 @@ select
   null,
   '小程序点餐外卖/分享社交功能总开关'
 from dual
-where not exists (
+where @kitchen_menu_id is not null
+  and not exists (
   select 1 from sys_menu where component = 'applet/switch/index'
 );
+
+-- 修正早期部署中误挂到“系统管理”目录下的菜单。
+update sys_menu
+set parent_id = @kitchen_menu_id,
+    order_num = 15
+where component = 'applet/switch/index'
+  and @kitchen_menu_id is not null;
