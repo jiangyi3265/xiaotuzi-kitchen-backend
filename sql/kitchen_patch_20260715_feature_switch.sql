@@ -17,12 +17,20 @@ where not exists (
 );
 
 set @kitchen_menu_id := (
-  select menu_id
+  select parent_id
   from sys_menu
-  where menu_name in ('私房菜管理', '厨房管理') and menu_type = 'M'
-  order by field(menu_name, '私房菜管理', '厨房管理'), menu_id
+  where component = 'kitchen/shop/index'
+  order by menu_id
   limit 1
 );
+
+set @kitchen_menu_id := coalesce(@kitchen_menu_id, (
+  select menu_id
+  from sys_menu
+  where menu_name in ('私房菜管理', '厨房管理')
+  order by field(menu_name, '私房菜管理', '厨房管理'), menu_id
+  limit 1
+));
 
 insert into sys_menu
   (menu_name, parent_id, order_num, path, component, query, route_name,
