@@ -235,7 +235,11 @@ jobs:
             fi
             sleep 3
           done
-          curl -fsS http://127.0.0.1:18081/api/wx/shop/info >/dev/null
+          if ! curl -fsS http://127.0.0.1:18081/api/wx/shop/info >/dev/null; then
+            docker compose -f docker-compose.deploy.yml ps || true
+            docker logs --tail 300 xiaotuzi-backend || true
+            exit 1
+          fi
 
           CAPTCHA_RESPONSE="$(curl -fsS http://127.0.0.1:18081/captchaImage)"
           printf '%s' "$CAPTCHA_RESPONSE" | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['code']==200 and d.get('captchaEnabled') in (True,False); assert not d.get('captchaEnabled') or (d.get('uuid') and len(d.get('img',''))>100)"
