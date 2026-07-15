@@ -65,11 +65,11 @@ jobs:
               entries = [item for item in jar.infolist() if not item.is_dir()]
           def digest(rows):
               value = hashlib.sha256()
-              for name, crc, size in sorted(rows):
-                  value.update(f"{name}:{crc}:{size}\n".encode())
+              for name, crc, size, compression in sorted(rows):
+                  value.update(f"{name}:{crc}:{size}:{compression}\n".encode())
               return value.hexdigest()
-          print(digest((item.filename, item.CRC, item.file_size) for item in entries if not is_app(item.filename)))
-          print(digest((item.filename, item.CRC, item.file_size) for item in entries))
+          print(digest((item.filename, item.CRC, item.file_size, item.compress_type) for item in entries if not is_app(item.filename)))
+          print(digest((item.filename, item.CRC, item.file_size, item.compress_type) for item in entries))
           PY
           )
           JAR_BASE_FINGERPRINT="${JAR_FINGERPRINTS[0]}"
@@ -129,7 +129,7 @@ jobs:
             -i ~/.ssh/xiaotuzi_deploy_key \
             -p "$PORT" \
             "$SERVER_USER@$SERVER_HOST" \
-            "rm -f '$BASE_JAR'; if test -f '$CURRENT_JAR'; then cp '$CURRENT_JAR' '$BASE_JAR'; else docker cp xiaotuzi-backend:/app/app.jar '$BASE_JAR'; fi; python3 -c 'import hashlib,sys,zipfile; a=lambda n: n.startswith(\"BOOT-INF/classes/\") or n in (\"BOOT-INF/classpath.idx\",\"BOOT-INF/layers.idx\") or n.startswith(\"BOOT-INF/lib/ruoyi-\") or n.startswith(\"META-INF/\"); z=zipfile.ZipFile(sys.argv[1]); rows=sorted((i.filename,i.CRC,i.file_size) for i in z.infolist() if not i.is_dir() and not a(i.filename)); h=hashlib.sha256(); [h.update((\"%s:%s:%s\\n\"%r).encode()) for r in rows]; assert h.hexdigest()==sys.argv[2]' '$BASE_JAR' '$JAR_BASE_FINGERPRINT'"
+            "rm -f '$BASE_JAR'; if test -f '$CURRENT_JAR'; then cp '$CURRENT_JAR' '$BASE_JAR'; else docker cp xiaotuzi-backend:/app/app.jar '$BASE_JAR'; fi; python3 -c 'import hashlib,sys,zipfile; a=lambda n: n.startswith(\"BOOT-INF/classes/\") or n in (\"BOOT-INF/classpath.idx\",\"BOOT-INF/layers.idx\") or n.startswith(\"BOOT-INF/lib/ruoyi-\") or n.startswith(\"META-INF/\"); z=zipfile.ZipFile(sys.argv[1]); rows=sorted((i.filename,i.CRC,i.file_size,i.compress_type) for i in z.infolist() if not i.is_dir() and not a(i.filename)); h=hashlib.sha256(); [h.update((\"%s:%s:%s:%s\\n\"%r).encode()) for r in rows]; assert h.hexdigest()==sys.argv[2]' '$BASE_JAR' '$JAR_BASE_FINGERPRINT'"
           then
             PATCH_MODE=1
             echo "Reusing unchanged backend dependency layer from the server"
@@ -185,12 +185,14 @@ jobs:
                   new.writestr(item, old.read(item.filename))
               for path in sorted(replacement_root.rglob("*")):
                   if path.is_file():
-                      new.write(path, path.relative_to(replacement_root).as_posix(), compress_type=zipfile.ZIP_DEFLATED)
+                      name = path.relative_to(replacement_root).as_posix()
+                      compression = zipfile.ZIP_STORED if name.startswith("BOOT-INF/lib/") and name.endswith(".jar") else zipfile.ZIP_DEFLATED
+                      new.write(path, name, compress_type=compression)
           with zipfile.ZipFile(destination) as jar:
-              rows = sorted((item.filename, item.CRC, item.file_size) for item in jar.infolist() if not item.is_dir())
+              rows = sorted((item.filename, item.CRC, item.file_size, item.compress_type) for item in jar.infolist() if not item.is_dir())
           value = hashlib.sha256()
-          for name, crc, size in rows:
-              value.update(f"{name}:{crc}:{size}\n".encode())
+          for name, crc, size, compression in rows:
+              value.update(f"{name}:{crc}:{size}:{compression}\n".encode())
           if value.hexdigest() != expected:
               raise SystemExit("patched backend content fingerprint mismatch")
           PY
