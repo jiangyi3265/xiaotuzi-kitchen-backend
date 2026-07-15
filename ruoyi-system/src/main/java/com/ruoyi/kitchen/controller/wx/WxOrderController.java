@@ -23,6 +23,8 @@ import com.ruoyi.kitchen.mapper.KitchenSocialMapper;
 import com.ruoyi.kitchen.mapper.KitchenOrderMapper;
 import com.ruoyi.kitchen.util.WxPageUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * 微信小程序订单接口，需登录。
@@ -42,6 +44,9 @@ public class WxOrderController
 
     @Autowired
     private KitchenOrderMapper orderMapper;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     /**
      * 小程序：提交订单。
@@ -187,6 +192,88 @@ public class WxOrderController
     }
 
     /**
+     * 保存订单采购清单。共同聚餐和情侣订单的可见成员均可完善采购规格。
+     */
+    @Anonymous
+    @PostMapping("/grocery/{id}")
+    public AjaxResult saveGrocery(@PathVariable("id") Long id, @RequestBody Map<String, Object> body,
+            HttpServletRequest request)
+    {
+        Long userId = wxTokenService.getRequiredUserId(request);
+        if (orderMapper.countOrderViewer(id, userId) == 0)
+        {
+            return AjaxResult.error("订单不存在");
+        }
+        Object rawItems = body == null ? null : body.get("items");
+        if (!(rawItems instanceof List))
+        {
+            return AjaxResult.error("采购清单格式不正确");
+        }
+        List<?> source = (List<?>) rawItems;
+        if (source.size() > 100)
+        {
+            return AjaxResult.error("采购清单最多保存100种食材");
+        }
+        List<Map<String, Object>> normalized = new ArrayList<>();
+        for (Object value : source)
+        {
+            if (!(value instanceof Map))
+            {
+                continue;
+            }
+            Map<?, ?> row = (Map<?, ?>) value;
+            String name = cleanText(row.get("name"), 64);
+            if (name.isEmpty())
+            {
+                continue;
+            }
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("name", name);
+            item.put("purchaseSpec", cleanText(row.get("purchaseSpec"), 24));
+            int quantity = 1;
+            try
+            {
+                quantity = Integer.parseInt(String.valueOf(row.get("quantity")));
+            }
+            catch (Exception ignored)
+            {
+                quantity = 1;
+            }
+            item.put("quantity", Math.max(1, Math.min(quantity, 999)));
+            List<String> dishNames = new ArrayList<>();
+            Object rawDishNames = row.get("dishNames");
+            if (rawDishNames instanceof List)
+            {
+                for (Object dishName : (List<?>) rawDishNames)
+                {
+                    String cleaned = cleanText(dishName, 64);
+                    if (!cleaned.isEmpty() && dishNames.size() < 20)
+                    {
+                        dishNames.add(cleaned);
+                    }
+                }
+            }
+            item.put("dishNames", dishNames);
+            item.put("checked", Boolean.TRUE.equals(row.get("checked")));
+            normalized.add(item);
+        }
+        try
+        {
+            String groceryJson = objectMapper.writeValueAsString(normalized);
+            if (groceryJson.length() > 20000)
+            {
+                return AjaxResult.error("采购清单内容过长");
+            }
+            orderMapper.updateGroceryJson(id, groceryJson);
+            return AjaxResult.success("采购清单已保存", normalized);
+        }
+        catch (JsonProcessingException e)
+        {
+            return AjaxResult.error("采购清单保存失败");
+        }
+    }
+
+    /**
      * 小程序：用户确认完成订单，仅本人订单。
      */
     @Anonymous
@@ -247,6 +334,16 @@ public class WxOrderController
             }
         }
         return null;
+    }
+
+    private String cleanText(Object value, int maxLength)
+    {
+        if (value == null)
+        {
+            return "";
+        }
+        String text = String.valueOf(value).replaceAll("[\\r\\n\\t]", " ").trim();
+        return text.length() > maxLength ? text.substring(0, maxLength) : text;
     }
 
     /**

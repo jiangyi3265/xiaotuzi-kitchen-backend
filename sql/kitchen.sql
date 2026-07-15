@@ -200,6 +200,7 @@ CREATE TABLE `kitchen_order` (
   `order_status`    char(1)       DEFAULT '0'               COMMENT '订单状态(0待处理 1已接单 2制作中 3已完成 4已取消 5申请退款)',
   `pay_status`      char(1)       DEFAULT '0'               COMMENT '支付状态(0未支付 1已支付)',
   `share_flag`      char(1)       DEFAULT '0'               COMMENT '是否分享成品(0否 1是)',
+  `grocery_json`    text          DEFAULT NULL              COMMENT '用户确认后的采购清单JSON',
   `create_by`    varchar(64)  DEFAULT ''                   COMMENT '创建者',
   `create_time`  datetime                                 COMMENT '创建时间',
   `update_by`    varchar(64)  DEFAULT ''                   COMMENT '更新者',

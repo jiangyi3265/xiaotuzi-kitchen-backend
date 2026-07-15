@@ -23,6 +23,7 @@
         <result property="orderStatus"     column="order_status"     />
         <result property="payStatus"       column="pay_status"       />
         <result property="shareFlag"       column="share_flag"       />
+        <result property="groceryJson"     column="grocery_json"     />
         <result property="createBy"        column="create_by"        />
         <result property="createTime"      column="create_time"      />
         <result property="updateBy"        column="update_by"        />
@@ -44,7 +45,7 @@
     <sql id="selectKitchenOrderVo">
         select o.id, o.order_no, o.wx_user_id, o.group_room_id, o.couple_space_id, o.recipient_wx_user_id, u.nickname as user_nickname, o.service_type,
                o.chef_id, c.chef_name, o.rider_id, r.rider_name, o.receiver_name, o.receiver_phone, o.receiver_address,
-               o.total_count, o.total_amount, o.order_status, o.pay_status, o.share_flag,
+               o.total_count, o.total_amount, o.order_status, o.pay_status, o.share_flag, o.grocery_json,
                o.create_by, o.create_time, o.update_by, o.update_time, o.remark
         from kitchen_order o
         left join kitchen_wx_user u on u.id = o.wx_user_id
@@ -157,6 +158,10 @@
             update_time = sysdate()
         </trim>
         where id = #{id}
+    </update>
+
+    <update id="updateGroceryJson">
+        update kitchen_order set grocery_json = #{groceryJson}, update_time = sysdate() where id = #{id} and del_flag = '0'
     </update>
 
     <update id="deleteKitchenOrderById" parameterType="Long">

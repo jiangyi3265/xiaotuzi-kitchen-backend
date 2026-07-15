@@ -95,6 +95,9 @@ public class KitchenOrder extends BaseEntity
     /** 是否分享成品(0否 1是) */
     private String shareFlag;
 
+    /** 用户确认后的采购食材、规格与进度JSON */
+    private String groceryJson;
+
     /** 订单明细（非DB字段） */
     private List<KitchenOrderItem> items = new ArrayList<>();
 
@@ -159,6 +162,9 @@ public class KitchenOrder extends BaseEntity
 
     public String getShareFlag() { return shareFlag; }
     public void setShareFlag(String shareFlag) { this.shareFlag = shareFlag; }
+
+    public String getGroceryJson() { return groceryJson; }
+    public void setGroceryJson(String groceryJson) { this.groceryJson = groceryJson; }
 
     public List<KitchenOrderItem> getItems() { return items; }
     public void setItems(List<KitchenOrderItem> items) { this.items = items; }
