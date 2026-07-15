@@ -119,6 +119,7 @@ jobs:
           transfer_file "/tmp/$APP_LAYER_NAME" "/tmp/$APP_LAYER_NAME"
 
           CURRENT_JAR="$DEPLOY_PATH/RuoYi-Vue/deploy-artifact/app.jar"
+          BASE_JAR="/tmp/xiaotuzi-current-backend.jar"
           PATCH_MODE=0
           if ssh \
             -o BatchMode=yes \
@@ -128,7 +129,7 @@ jobs:
             -i ~/.ssh/xiaotuzi_deploy_key \
             -p "$PORT" \
             "$SERVER_USER@$SERVER_HOST" \
-            "test -f '$CURRENT_JAR' && python3 -c 'import hashlib,sys,zipfile; a=lambda n: n.startswith(\"BOOT-INF/classes/\") or n in (\"BOOT-INF/classpath.idx\",\"BOOT-INF/layers.idx\") or n.startswith(\"BOOT-INF/lib/ruoyi-\") or n.startswith(\"META-INF/\"); z=zipfile.ZipFile(sys.argv[1]); rows=sorted((i.filename,i.CRC,i.file_size) for i in z.infolist() if not i.is_dir() and not a(i.filename)); h=hashlib.sha256(); [h.update((\"%s:%s:%s\\n\"%r).encode()) for r in rows]; assert h.hexdigest()==sys.argv[2]' '$CURRENT_JAR' '$JAR_BASE_FINGERPRINT'"
+            "rm -f '$BASE_JAR'; if test -f '$CURRENT_JAR'; then cp '$CURRENT_JAR' '$BASE_JAR'; else docker cp xiaotuzi-backend:/app/app.jar '$BASE_JAR'; fi; python3 -c 'import hashlib,sys,zipfile; a=lambda n: n.startswith(\"BOOT-INF/classes/\") or n in (\"BOOT-INF/classpath.idx\",\"BOOT-INF/layers.idx\") or n.startswith(\"BOOT-INF/lib/ruoyi-\") or n.startswith(\"META-INF/\"); z=zipfile.ZipFile(sys.argv[1]); rows=sorted((i.filename,i.CRC,i.file_size) for i in z.infolist() if not i.is_dir() and not a(i.filename)); h=hashlib.sha256(); [h.update((\"%s:%s:%s\\n\"%r).encode()) for r in rows]; assert h.hexdigest()==sys.argv[2]' '$BASE_JAR' '$JAR_BASE_FINGERPRINT'"
           then
             PATCH_MODE=1
             echo "Reusing unchanged backend dependency layer from the server"
@@ -159,17 +160,16 @@ jobs:
             -i ~/.ssh/xiaotuzi_deploy_key \
             -p "$PORT" \
             "$SERVER_USER@$SERVER_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' JAR_NAME='$JAR_NAME' JAR_PART_PREFIX='$JAR_PART_PREFIX' APP_LAYER_NAME='$APP_LAYER_NAME' PATCH_MODE='$PATCH_MODE' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' JAR_CONTENT_FINGERPRINT='$JAR_CONTENT_FINGERPRINT' bash -s" <<'EOF'
+            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' JAR_NAME='$JAR_NAME' JAR_PART_PREFIX='$JAR_PART_PREFIX' APP_LAYER_NAME='$APP_LAYER_NAME' BASE_JAR='$BASE_JAR' PATCH_MODE='$PATCH_MODE' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' JAR_CONTENT_FINGERPRINT='$JAR_CONTENT_FINGERPRINT' bash -s" <<'EOF'
           set -euo pipefail
 
           TARGET_DIR="$DEPLOY_PATH/RuoYi-Vue"
           if [ "$PATCH_MODE" = "1" ]; then
-            OLD_JAR="$TARGET_DIR/deploy-artifact/app.jar"
             REPLACEMENT_DIR="/tmp/xiaotuzi-backend-application"
             rm -rf "$REPLACEMENT_DIR"
             mkdir -p "$REPLACEMENT_DIR"
             tar -xzf "/tmp/$APP_LAYER_NAME" -C "$REPLACEMENT_DIR"
-            python3 - "$OLD_JAR" "/tmp/$JAR_NAME" "$REPLACEMENT_DIR" "$JAR_CONTENT_FINGERPRINT" <<'PY'
+            python3 - "$BASE_JAR" "/tmp/$JAR_NAME" "$REPLACEMENT_DIR" "$JAR_CONTENT_FINGERPRINT" <<'PY'
           import hashlib, pathlib, sys, zipfile
           source, destination, replacement_root, expected = sys.argv[1:]
           replacement_root = pathlib.Path(replacement_root)
@@ -191,7 +191,7 @@ jobs:
           value = hashlib.sha256()
           for name, crc, size in rows:
               value.update(f"{name}:{crc}:{size}\n".encode())
-          if value.hexdigest() != expected:
+            if value.hexdigest() != expected:
               raise SystemExit("patched backend content fingerprint mismatch")
           PY
             rm -rf "$REPLACEMENT_DIR"
@@ -201,6 +201,7 @@ jobs:
             test "$(stat -c%s "/tmp/$JAR_NAME")" = "$JAR_SIZE"
             test "$(sha256sum "/tmp/$JAR_NAME" | cut -d' ' -f1)" = "$JAR_SHA256"
           fi
+          rm -f "$BASE_JAR"
           rm -f "/tmp/$APP_LAYER_NAME"
           rm -rf "$TARGET_DIR"
           mkdir -p "$TARGET_DIR"
