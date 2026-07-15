@@ -45,8 +45,35 @@ jobs:
           ARCHIVE_NAME="xiaotuzi-backend-${GITHUB_SHA}.tgz"
           JAR_NAME="xiaotuzi-backend-${GITHUB_SHA}.jar"
           JAR_PART_PREFIX="${JAR_NAME}.part."
+          APP_LAYER_NAME="xiaotuzi-backend-app-${GITHUB_SHA}.tgz"
+          APP_LAYER_DIR="/tmp/xiaotuzi-backend-layers-${GITHUB_SHA}"
+          JAR_PATH="$GITHUB_WORKSPACE/ruoyi-admin/target/ruoyi-admin.jar"
           JAR_SIZE="$(stat -c%s ruoyi-admin/target/ruoyi-admin.jar)"
           JAR_SHA256="$(sha256sum ruoyi-admin/target/ruoyi-admin.jar | cut -d' ' -f1)"
+
+          mkdir -p "$APP_LAYER_DIR"
+          (cd "$APP_LAYER_DIR" && java -Djarmode=layertools -jar "$JAR_PATH" extract)
+          tar -C "$APP_LAYER_DIR/application" -czf "/tmp/$APP_LAYER_NAME" .
+          mapfile -t JAR_FINGERPRINTS < <(python3 - "$JAR_PATH" <<'PY'
+          import hashlib, sys, zipfile
+          def is_app(name):
+              return (name.startswith("BOOT-INF/classes/") or
+                      name in ("BOOT-INF/classpath.idx", "BOOT-INF/layers.idx") or
+                      name.startswith("BOOT-INF/lib/ruoyi-") or
+                      name.startswith("META-INF/"))
+          with zipfile.ZipFile(sys.argv[1]) as jar:
+              entries = [item for item in jar.infolist() if not item.is_dir()]
+          def digest(rows):
+              value = hashlib.sha256()
+              for name, crc, size in sorted(rows):
+                  value.update(f"{name}:{crc}:{size}\n".encode())
+              return value.hexdigest()
+          print(digest((item.filename, item.CRC, item.file_size) for item in entries if not is_app(item.filename)))
+          print(digest((item.filename, item.CRC, item.file_size) for item in entries))
+          PY
+          )
+          JAR_BASE_FINGERPRINT="${JAR_FINGERPRINTS[0]}"
+          JAR_CONTENT_FINGERPRINT="${JAR_FINGERPRINTS[1]}"
 
           mkdir -p ~/.ssh
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/xiaotuzi_deploy_key
@@ -89,8 +116,11 @@ jobs:
           }
 
           transfer_file "/tmp/$ARCHIVE_NAME" "/tmp/$ARCHIVE_NAME"
-          split -b 5m -d -a 3 "ruoyi-admin/target/ruoyi-admin.jar" "/tmp/$JAR_PART_PREFIX"
-          ssh \
+          transfer_file "/tmp/$APP_LAYER_NAME" "/tmp/$APP_LAYER_NAME"
+
+          CURRENT_JAR="$DEPLOY_PATH/RuoYi-Vue/deploy-artifact/app.jar"
+          PATCH_MODE=0
+          if ssh \
             -o BatchMode=yes \
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=20 \
@@ -98,14 +128,30 @@ jobs:
             -i ~/.ssh/xiaotuzi_deploy_key \
             -p "$PORT" \
             "$SERVER_USER@$SERVER_HOST" \
-            "rm -f /tmp/${JAR_PART_PREFIX}* /tmp/$JAR_NAME"
-          PART_COUNT="$(find /tmp -maxdepth 1 -type f -name "${JAR_PART_PREFIX}*" | wc -l)"
-          PART_INDEX=0
-          for part in /tmp/${JAR_PART_PREFIX}*; do
-            PART_INDEX=$((PART_INDEX + 1))
-            echo "Transferring backend chunk $PART_INDEX/$PART_COUNT"
-            transfer_file "$part" "/tmp/$(basename "$part")"
-          done
+            "test -f '$CURRENT_JAR' && python3 -c 'import hashlib,sys,zipfile; a=lambda n: n.startswith(\"BOOT-INF/classes/\") or n in (\"BOOT-INF/classpath.idx\",\"BOOT-INF/layers.idx\") or n.startswith(\"BOOT-INF/lib/ruoyi-\") or n.startswith(\"META-INF/\"); z=zipfile.ZipFile(sys.argv[1]); rows=sorted((i.filename,i.CRC,i.file_size) for i in z.infolist() if not i.is_dir() and not a(i.filename)); h=hashlib.sha256(); [h.update((\"%s:%s:%s\\n\"%r).encode()) for r in rows]; assert h.hexdigest()==sys.argv[2]' '$CURRENT_JAR' '$JAR_BASE_FINGERPRINT'"
+          then
+            PATCH_MODE=1
+            echo "Reusing unchanged backend dependency layer from the server"
+          else
+            echo "Dependency layer changed or unavailable; transferring the full backend in chunks"
+            split -b 5m -d -a 3 "$JAR_PATH" "/tmp/$JAR_PART_PREFIX"
+            ssh \
+              -o BatchMode=yes \
+              -o ConnectTimeout=30 \
+              -o ServerAliveInterval=20 \
+              -o ServerAliveCountMax=15 \
+              -i ~/.ssh/xiaotuzi_deploy_key \
+              -p "$PORT" \
+              "$SERVER_USER@$SERVER_HOST" \
+              "rm -f /tmp/${JAR_PART_PREFIX}* /tmp/$JAR_NAME"
+            PART_COUNT="$(find /tmp -maxdepth 1 -type f -name "${JAR_PART_PREFIX}*" | wc -l)"
+            PART_INDEX=0
+            for part in /tmp/${JAR_PART_PREFIX}*; do
+              PART_INDEX=$((PART_INDEX + 1))
+              echo "Transferring backend chunk $PART_INDEX/$PART_COUNT"
+              transfer_file "$part" "/tmp/$(basename "$part")"
+            done
+          fi
 
           ssh \
             -o ServerAliveInterval=20 \
@@ -113,20 +159,55 @@ jobs:
             -i ~/.ssh/xiaotuzi_deploy_key \
             -p "$PORT" \
             "$SERVER_USER@$SERVER_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' JAR_NAME='$JAR_NAME' JAR_PART_PREFIX='$JAR_PART_PREFIX' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' bash -s" <<'EOF'
+            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' JAR_NAME='$JAR_NAME' JAR_PART_PREFIX='$JAR_PART_PREFIX' APP_LAYER_NAME='$APP_LAYER_NAME' PATCH_MODE='$PATCH_MODE' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' JAR_CONTENT_FINGERPRINT='$JAR_CONTENT_FINGERPRINT' bash -s" <<'EOF'
           set -euo pipefail
 
           TARGET_DIR="$DEPLOY_PATH/RuoYi-Vue"
+          if [ "$PATCH_MODE" = "1" ]; then
+            OLD_JAR="$TARGET_DIR/deploy-artifact/app.jar"
+            REPLACEMENT_DIR="/tmp/xiaotuzi-backend-application"
+            rm -rf "$REPLACEMENT_DIR"
+            mkdir -p "$REPLACEMENT_DIR"
+            tar -xzf "/tmp/$APP_LAYER_NAME" -C "$REPLACEMENT_DIR"
+            python3 - "$OLD_JAR" "/tmp/$JAR_NAME" "$REPLACEMENT_DIR" "$JAR_CONTENT_FINGERPRINT" <<'PY'
+          import hashlib, pathlib, sys, zipfile
+          source, destination, replacement_root, expected = sys.argv[1:]
+          replacement_root = pathlib.Path(replacement_root)
+          def is_app(name):
+              return (name.startswith("BOOT-INF/classes/") or
+                      name in ("BOOT-INF/classpath.idx", "BOOT-INF/layers.idx") or
+                      name.startswith("BOOT-INF/lib/ruoyi-") or
+                      name.startswith("META-INF/"))
+          with zipfile.ZipFile(source) as old, zipfile.ZipFile(destination, "w") as new:
+              for item in old.infolist():
+                  if is_app(item.filename):
+                      continue
+                  new.writestr(item, old.read(item.filename))
+              for path in sorted(replacement_root.rglob("*")):
+                  if path.is_file():
+                      new.write(path, path.relative_to(replacement_root).as_posix(), compress_type=zipfile.ZIP_DEFLATED)
+          with zipfile.ZipFile(destination) as jar:
+              rows = sorted((item.filename, item.CRC, item.file_size) for item in jar.infolist() if not item.is_dir())
+          value = hashlib.sha256()
+          for name, crc, size in rows:
+              value.update(f"{name}:{crc}:{size}\n".encode())
+          if value.hexdigest() != expected:
+              raise SystemExit("patched backend content fingerprint mismatch")
+          PY
+            rm -rf "$REPLACEMENT_DIR"
+          else
+            cat /tmp/${JAR_PART_PREFIX}* > "/tmp/$JAR_NAME"
+            rm -f /tmp/${JAR_PART_PREFIX}*
+            test "$(stat -c%s "/tmp/$JAR_NAME")" = "$JAR_SIZE"
+            test "$(sha256sum "/tmp/$JAR_NAME" | cut -d' ' -f1)" = "$JAR_SHA256"
+          fi
+          rm -f "/tmp/$APP_LAYER_NAME"
           rm -rf "$TARGET_DIR"
           mkdir -p "$TARGET_DIR"
           tar -xzf "/tmp/$ARCHIVE_NAME" -C "$TARGET_DIR"
           rm -f "/tmp/$ARCHIVE_NAME"
-          cat /tmp/${JAR_PART_PREFIX}* > "/tmp/$JAR_NAME"
-          rm -f /tmp/${JAR_PART_PREFIX}*
           mkdir -p "$TARGET_DIR/deploy-artifact"
           mv "/tmp/$JAR_NAME" "$TARGET_DIR/deploy-artifact/app.jar"
-          test "$(stat -c%s "$TARGET_DIR/deploy-artifact/app.jar")" = "$JAR_SIZE"
-          test "$(sha256sum "$TARGET_DIR/deploy-artifact/app.jar" | cut -d' ' -f1)" = "$JAR_SHA256"
 
           cd "$DEPLOY_PATH"
 
