@@ -191,7 +191,7 @@ jobs:
           value = hashlib.sha256()
           for name, crc, size in rows:
               value.update(f"{name}:{crc}:{size}\n".encode())
-            if value.hexdigest() != expected:
+          if value.hexdigest() != expected:
               raise SystemExit("patched backend content fingerprint mismatch")
           PY
             rm -rf "$REPLACEMENT_DIR"
