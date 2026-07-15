@@ -2,6 +2,7 @@ package com.ruoyi.kitchen.controller.wx;
 
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,6 +14,7 @@ import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.common.utils.file.FileUtils;
 import com.ruoyi.common.utils.file.MimeTypeUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
+import com.ruoyi.system.service.ISysConfigService;
 
 /**
  * 小程序通用上传Controller
@@ -27,6 +29,24 @@ public class WxCommonController
 {
     @Autowired
     private WxTokenService wxTokenService;
+
+    @Autowired
+    private ISysConfigService configService;
+
+    /**
+     * 小程序功能总开关（公开，无需登录）。
+     * 读取 sys_config 键 wx.feature.enabled，键不存在或为空时默认 false（默认隐藏）。
+     */
+    @Anonymous
+    @GetMapping("/features")
+    public AjaxResult features()
+    {
+        AjaxResult ajax = AjaxResult.success();
+        String value = configService.selectConfigByKey("wx.feature.enabled");
+        boolean enabled = "true".equalsIgnoreCase(value);
+        ajax.put("enabled", enabled);
+        return ajax;
+    }
 
     /**
      * 小程序图片上传（单个，仅登录用户，仅图片）

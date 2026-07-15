@@ -237,7 +237,8 @@ jobs:
             RuoYi-Vue/sql/kitchen_patch_20260713_feedback_market.sql \
             RuoYi-Vue/sql/kitchen_patch_20260713_today_schedule.sql \
             RuoYi-Vue/sql/kitchen_patch_20260713_couple_cart.sql \
-            RuoYi-Vue/sql/kitchen_patch_20260715_grocery_specs.sql
+            RuoYi-Vue/sql/kitchen_patch_20260715_grocery_specs.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260715_feature_switch.sql
           do
             if [ -f "$sql" ]; then
               docker exec -i xiaotuzi-mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" ha' < "$sql"
@@ -271,6 +272,11 @@ jobs:
           test "$SHOP_COLUMN_COUNT" = "3"
           TODAY_COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_dish\" and column_name=\"today_type\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$TODAY_COLUMN_COUNT" = "1"
+          FEATURE_CONFIG_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from sys_config where config_key=\"wx.feature.enabled\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
+          test "$FEATURE_CONFIG_COUNT" = "1"
+          FEATURE_MENU_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from sys_menu where component=\"applet/switch/index\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
+          test "$FEATURE_MENU_COUNT" = "1"
+          curl -fsS http://127.0.0.1:18081/api/wx/common/features | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['code']==200 and isinstance(d.get('enabled'), bool)"
           curl -fsS 'http://127.0.0.1:18081/api/wx/region/status?province=test&city=test&district=test' | grep -q '"code":200'
           curl -fsS 'http://127.0.0.1:18081/api/wx/region/opened' | grep -q '"code":200'
           curl -fsS 'http://127.0.0.1:18081/api/wx/service-application/my?applicationType=0' | grep -q '"code":401'
