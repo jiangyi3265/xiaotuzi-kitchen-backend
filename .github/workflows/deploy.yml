@@ -44,6 +44,7 @@ jobs:
           DEPLOY_PATH="${SERVER_DEPLOY_PATH:-/opt/xiaotuzi-kitchen/current}"
           ARCHIVE_NAME="xiaotuzi-backend-${GITHUB_SHA}.tgz"
           JAR_NAME="xiaotuzi-backend-${GITHUB_SHA}.jar"
+          JAR_PART_PREFIX="${JAR_NAME}.part."
           JAR_SIZE="$(stat -c%s ruoyi-admin/target/ruoyi-admin.jar)"
           JAR_SHA256="$(sha256sum ruoyi-admin/target/ruoyi-admin.jar | cut -d' ' -f1)"
 
@@ -73,7 +74,7 @@ jobs:
                 -o BatchMode=yes \
                 -o ConnectTimeout=30 \
                 -o ServerAliveInterval=20 \
-                -o ServerAliveCountMax=120 \
+                -o ServerAliveCountMax=15 \
                 -i ~/.ssh/xiaotuzi_deploy_key \
                 -P "$PORT" \
                 "$source" \
@@ -88,7 +89,23 @@ jobs:
           }
 
           transfer_file "/tmp/$ARCHIVE_NAME" "/tmp/$ARCHIVE_NAME"
-          transfer_file "ruoyi-admin/target/ruoyi-admin.jar" "/tmp/$JAR_NAME"
+          split -b 5m -d -a 3 "ruoyi-admin/target/ruoyi-admin.jar" "/tmp/$JAR_PART_PREFIX"
+          ssh \
+            -o BatchMode=yes \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=20 \
+            -o ServerAliveCountMax=15 \
+            -i ~/.ssh/xiaotuzi_deploy_key \
+            -p "$PORT" \
+            "$SERVER_USER@$SERVER_HOST" \
+            "rm -f /tmp/${JAR_PART_PREFIX}* /tmp/$JAR_NAME"
+          PART_COUNT="$(find /tmp -maxdepth 1 -type f -name "${JAR_PART_PREFIX}*" | wc -l)"
+          PART_INDEX=0
+          for part in /tmp/${JAR_PART_PREFIX}*; do
+            PART_INDEX=$((PART_INDEX + 1))
+            echo "Transferring backend chunk $PART_INDEX/$PART_COUNT"
+            transfer_file "$part" "/tmp/$(basename "$part")"
+          done
 
           ssh \
             -o ServerAliveInterval=20 \
@@ -96,7 +113,7 @@ jobs:
             -i ~/.ssh/xiaotuzi_deploy_key \
             -p "$PORT" \
             "$SERVER_USER@$SERVER_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' JAR_NAME='$JAR_NAME' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' bash -s" <<'EOF'
+            "DEPLOY_PATH='$DEPLOY_PATH' ARCHIVE_NAME='$ARCHIVE_NAME' JAR_NAME='$JAR_NAME' JAR_PART_PREFIX='$JAR_PART_PREFIX' JAR_SIZE='$JAR_SIZE' JAR_SHA256='$JAR_SHA256' bash -s" <<'EOF'
           set -euo pipefail
 
           TARGET_DIR="$DEPLOY_PATH/RuoYi-Vue"
@@ -104,6 +121,8 @@ jobs:
           mkdir -p "$TARGET_DIR"
           tar -xzf "/tmp/$ARCHIVE_NAME" -C "$TARGET_DIR"
           rm -f "/tmp/$ARCHIVE_NAME"
+          cat /tmp/${JAR_PART_PREFIX}* > "/tmp/$JAR_NAME"
+          rm -f /tmp/${JAR_PART_PREFIX}*
           mkdir -p "$TARGET_DIR/deploy-artifact"
           mv "/tmp/$JAR_NAME" "$TARGET_DIR/deploy-artifact/app.jar"
           test "$(stat -c%s "$TARGET_DIR/deploy-artifact/app.jar")" = "$JAR_SIZE"
