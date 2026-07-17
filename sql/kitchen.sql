@@ -42,6 +42,7 @@ CREATE TABLE `kitchen_shop` (
   `avatar`         varchar(255) DEFAULT ''                 COMMENT '厨房头像',
   `banner`         varchar(255) DEFAULT ''                 COMMENT '背景图',
   `subtitle`       varchar(128) DEFAULT ''                 COMMENT '副标题/口号',
+  `official_account_qr` varchar(255) DEFAULT ''            COMMENT '公众号二维码',
   `invite_cover`   varchar(255) DEFAULT ''                 COMMENT '邀请封面',
   `invite_text`    varchar(255) DEFAULT ''                 COMMENT '邀请文案',
   `wechat_qr`      varchar(255) DEFAULT ''                 COMMENT '微信收款码',

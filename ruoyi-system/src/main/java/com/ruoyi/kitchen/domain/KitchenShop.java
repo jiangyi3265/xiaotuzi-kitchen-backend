@@ -26,6 +26,9 @@ public class KitchenShop extends BaseEntity
     /** 副标题/口号 */
     private String subtitle;
 
+    /** 公众号二维码 */
+    private String officialAccountQr;
+
     /** 邀请封面 */
     private String inviteCover;
 
@@ -91,6 +94,9 @@ public class KitchenShop extends BaseEntity
 
     public String getSubtitle() { return subtitle; }
     public void setSubtitle(String subtitle) { this.subtitle = subtitle; }
+
+    public String getOfficialAccountQr() { return officialAccountQr; }
+    public void setOfficialAccountQr(String officialAccountQr) { this.officialAccountQr = officialAccountQr; }
 
     public String getInviteCover() { return inviteCover; }
     public void setInviteCover(String inviteCover) { this.inviteCover = inviteCover; }

@@ -238,7 +238,8 @@ jobs:
             RuoYi-Vue/sql/kitchen_patch_20260713_today_schedule.sql \
             RuoYi-Vue/sql/kitchen_patch_20260713_couple_cart.sql \
             RuoYi-Vue/sql/kitchen_patch_20260715_grocery_specs.sql \
-            RuoYi-Vue/sql/kitchen_patch_20260715_feature_switch.sql
+            RuoYi-Vue/sql/kitchen_patch_20260715_feature_switch.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260717_profile_qr.sql
           do
             if [ -f "$sql" ]; then
               docker exec -i xiaotuzi-mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" ha' < "$sql"
@@ -268,8 +269,8 @@ jobs:
           test "$TABLE_COUNT" = "10"
           COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_order\" and column_name in (\"group_room_id\",\"couple_space_id\",\"recipient_wx_user_id\",\"grocery_json\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$COLUMN_COUNT" = "4"
-          SHOP_COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_shop\" and column_name in (\"stock_group_qr\",\"stock_group_name\",\"stock_group_notice\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
-          test "$SHOP_COLUMN_COUNT" = "3"
+          SHOP_COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_shop\" and column_name in (\"stock_group_qr\",\"stock_group_name\",\"stock_group_notice\",\"official_account_qr\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
+          test "$SHOP_COLUMN_COUNT" = "4"
           TODAY_COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_dish\" and column_name=\"today_type\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$TODAY_COLUMN_COUNT" = "1"
           FEATURE_CONFIG_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from sys_config where config_key=\"wx.feature.enabled\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"

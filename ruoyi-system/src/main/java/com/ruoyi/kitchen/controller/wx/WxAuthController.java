@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -127,6 +128,36 @@ public class WxAuthController
     public AjaxResult info(HttpServletRequest request)
     {
         Long userId = wxTokenService.getRequiredUserId(request);
+        return AjaxResult.success(wxUserService.selectKitchenWxUserById(userId));
+    }
+
+    /**
+     * 修改当前登录用户资料。只允许更新本人可编辑字段，防止越权修改身份和状态。
+     */
+    @Anonymous
+    @PutMapping("/profile")
+    public AjaxResult updateProfile(@RequestBody JSONObject body, HttpServletRequest request)
+    {
+        Long userId = wxTokenService.getRequiredUserId(request);
+        String nickname = body == null ? null : body.getString("nickname");
+        if (StringUtils.isBlank(nickname))
+        {
+            return AjaxResult.error("昵称不能为空");
+        }
+        nickname = nickname.trim();
+        if (nickname.length() > 30)
+        {
+            return AjaxResult.error("昵称最多30个字");
+        }
+
+        KitchenWxUser update = new KitchenWxUser();
+        update.setId(userId);
+        update.setNickname(nickname);
+        update.setUpdateBy("wx:" + userId);
+        if (wxUserService.updateKitchenWxUser(update) <= 0)
+        {
+            return AjaxResult.error("昵称更新失败");
+        }
         return AjaxResult.success(wxUserService.selectKitchenWxUserById(userId));
     }
 
