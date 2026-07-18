@@ -107,6 +107,10 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
             {
                 throw new ServiceException("存在子分类，不允许删除");
             }
+            if (kitchenCategoryMapper.selectDishCountByCategoryId(id) > 0)
+            {
+                throw new ServiceException("分类下存在菜谱，请先迁移或删除菜谱");
+            }
         }
         return kitchenCategoryMapper.deleteKitchenCategoryByIds(ids);
     }
@@ -117,6 +121,10 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
         if (kitchenCategoryMapper.selectChildrenCountByParentId(id) > 0)
         {
             throw new ServiceException("存在子分类，不允许删除");
+        }
+        if (kitchenCategoryMapper.selectDishCountByCategoryId(id) > 0)
+        {
+            throw new ServiceException("分类下存在菜谱，请先迁移或删除菜谱");
         }
         return kitchenCategoryMapper.deleteKitchenCategoryById(id);
     }

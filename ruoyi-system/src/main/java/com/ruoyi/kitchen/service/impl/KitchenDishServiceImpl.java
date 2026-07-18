@@ -1,15 +1,20 @@
 package com.ruoyi.kitchen.service.impl;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.kitchen.domain.KitchenCategory;
 import com.ruoyi.kitchen.domain.KitchenDish;
 import com.ruoyi.kitchen.domain.KitchenDishSpec;
 import com.ruoyi.kitchen.domain.KitchenDishSpecValue;
 import com.ruoyi.kitchen.domain.KitchenDishStep;
+import com.ruoyi.kitchen.mapper.KitchenCategoryMapper;
 import com.ruoyi.kitchen.mapper.KitchenDishMapper;
 import com.ruoyi.kitchen.service.IKitchenDishService;
 
@@ -23,6 +28,9 @@ public class KitchenDishServiceImpl implements IKitchenDishService
 {
     @Autowired
     private KitchenDishMapper kitchenDishMapper;
+
+    @Autowired
+    private KitchenCategoryMapper kitchenCategoryMapper;
 
     @Override
     public KitchenDish selectKitchenDishById(Long id)
@@ -53,6 +61,7 @@ public class KitchenDishServiceImpl implements IKitchenDishService
     @Transactional(rollbackFor = Exception.class)
     public int insertKitchenDish(KitchenDish kitchenDish)
     {
+        validateActiveCategory(kitchenDish.getCategoryId());
         int rows = kitchenDishMapper.insertKitchenDish(kitchenDish);
         saveChildren(kitchenDish);
         return rows;
@@ -62,6 +71,7 @@ public class KitchenDishServiceImpl implements IKitchenDishService
     @Transactional(rollbackFor = Exception.class)
     public int updateKitchenDish(KitchenDish kitchenDish)
     {
+        validateActiveCategory(kitchenDish.getCategoryId());
         // 先清空子表再重建，保证编辑后一致
         Long[] ids = new Long[] { kitchenDish.getId() };
         kitchenDishMapper.deleteSpecValueByDishIds(ids);
@@ -69,6 +79,37 @@ public class KitchenDishServiceImpl implements IKitchenDishService
         kitchenDishMapper.deleteStepByDishIds(ids);
         saveChildren(kitchenDish);
         return kitchenDishMapper.updateKitchenDish(kitchenDish);
+    }
+
+    /**
+     * 菜品必须挂在一个存在且整条父级链均启用的分类下，避免后台保存成功但小程序分类树无法展示。
+     */
+    private void validateActiveCategory(Long categoryId)
+    {
+        if (categoryId == null)
+        {
+            throw new ServiceException("请选择所属分类");
+        }
+
+        Set<Long> visited = new HashSet<>();
+        Long currentId = categoryId;
+        while (currentId != null && currentId != 0L)
+        {
+            if (!visited.add(currentId))
+            {
+                throw new ServiceException("所属分类层级异常，请联系管理员处理");
+            }
+            KitchenCategory category = kitchenCategoryMapper.selectKitchenCategoryById(currentId);
+            if (category == null)
+            {
+                throw new ServiceException("所属分类不存在，请重新选择");
+            }
+            if (!"0".equals(category.getStatus()))
+            {
+                throw new ServiceException("所属分类已停用，请重新选择");
+            }
+            currentId = category.getParentId();
+        }
     }
 
     /**
