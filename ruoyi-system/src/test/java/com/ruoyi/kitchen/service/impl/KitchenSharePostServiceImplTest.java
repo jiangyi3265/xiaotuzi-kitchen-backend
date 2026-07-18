@@ -16,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.kitchen.domain.KitchenSharePost;
 import com.ruoyi.kitchen.mapper.KitchenPostLikeMapper;
 import com.ruoyi.kitchen.mapper.KitchenSharePostMapper;
 
@@ -30,6 +31,37 @@ class KitchenSharePostServiceImplTest
 
     @InjectMocks
     private KitchenSharePostServiceImpl service;
+
+    @Test
+    void auditRejectsInvalidStatusBeforeWriting()
+    {
+        assertThrows(ServiceException.class, () -> service.audit(5L, "9"));
+        verifyNoInteractions(postMapper, likeMapper);
+    }
+
+    @Test
+    void auditRejectsMissingOrDeletedPost()
+    {
+        when(postMapper.selectKitchenSharePostById(5L)).thenReturn(null);
+
+        assertThrows(ServiceException.class, () -> service.audit(5L, "1"));
+
+        verify(postMapper, never()).updateKitchenSharePost(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void auditWritesValidatedStatus()
+    {
+        KitchenSharePost existing = new KitchenSharePost();
+        existing.setId(5L);
+        when(postMapper.selectKitchenSharePostById(5L)).thenReturn(existing);
+        when(postMapper.updateKitchenSharePost(org.mockito.ArgumentMatchers.any())).thenReturn(1);
+
+        assertTrue(service.audit(5L, "1") == 1);
+
+        verify(postMapper).updateKitchenSharePost(org.mockito.ArgumentMatchers.argThat(
+                post -> Long.valueOf(5L).equals(post.getId()) && "1".equals(post.getAuditStatus())));
+    }
 
     @Test
     void rejectsIncompleteParametersBeforeTouchingTheDatabase()

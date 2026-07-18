@@ -52,7 +52,7 @@ public class KitchenWxUserController extends BaseController
         util.exportExcel(response, list, "小程序用户数据");
     }
 
-    @PreAuthorize("@ss.hasPermi('kitchen:wxUser:query')")
+    @PreAuthorize("@ss.hasAnyPermi('kitchen:wxUser:query,kitchen:wxUser:edit')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {

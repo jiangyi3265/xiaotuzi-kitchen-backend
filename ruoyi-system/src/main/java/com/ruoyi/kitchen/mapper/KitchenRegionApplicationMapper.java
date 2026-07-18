@@ -6,6 +6,7 @@ import com.ruoyi.kitchen.domain.KitchenRegionApplication;
 public interface KitchenRegionApplicationMapper {
     List<KitchenRegionApplication> selectList(KitchenRegionApplication query);
     KitchenRegionApplication selectById(Long id);
+    KitchenRegionApplication selectByIdForUpdate(Long id);
     KitchenRegionApplication selectLatestByUser(Long wxUserId);
     int countEnabledRegion(KitchenRegionApplication query);
     List<KitchenRegionApplication> selectEnabledRegions();

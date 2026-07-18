@@ -8,11 +8,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.common.annotation.Anonymous;
+import com.ruoyi.common.annotation.RateLimiter;
 import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.common.utils.file.FileUtils;
 import com.ruoyi.common.utils.file.MimeTypeUtils;
+import com.ruoyi.common.enums.LimitType;
 import com.ruoyi.kitchen.util.WxMediaUrlUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
 import com.ruoyi.system.service.ISysConfigService;
@@ -54,6 +56,7 @@ public class WxCommonController
      */
     @Anonymous
     @PostMapping("/upload")
+    @RateLimiter(time = 60, count = 20, limitType = LimitType.IP)
     public AjaxResult upload(MultipartFile file, HttpServletRequest request)
     {
         // 需登录，避免匿名滥用

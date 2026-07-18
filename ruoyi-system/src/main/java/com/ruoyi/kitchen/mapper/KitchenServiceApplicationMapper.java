@@ -8,6 +8,7 @@ import com.ruoyi.kitchen.domain.KitchenServiceApplication;
 public interface KitchenServiceApplicationMapper {
     List<KitchenServiceApplication> selectList(KitchenServiceApplication query);
     KitchenServiceApplication selectById(Long id);
+    KitchenServiceApplication selectByIdForUpdate(Long id);
     KitchenServiceApplication selectLatestByUserAndType(@Param("wxUserId") Long wxUserId, @Param("applicationType") String applicationType);
     int insert(KitchenServiceApplication application);
     int audit(@Param("id") Long id, @Param("auditStatus") String auditStatus, @Param("remark") String remark, @Param("providerId") Long providerId);

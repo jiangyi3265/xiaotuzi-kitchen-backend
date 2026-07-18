@@ -31,6 +31,7 @@
             c.del_flag = '0'
             <if test="postId != null">                            AND c.post_id = #{postId}</if>
             <if test="wxUserId != null">                          AND c.wx_user_id = #{wxUserId}</if>
+            <if test="content != null and content != ''">         AND c.content like concat('%', #{content}, '%')</if>
             <if test="auditStatus != null and auditStatus != ''"> AND c.audit_status = #{auditStatus}</if>
         </where>
         order by c.create_time desc

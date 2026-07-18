@@ -15,6 +15,9 @@ public interface KitchenWxUserMapper
 
     public KitchenWxUser selectKitchenWxUserByOpenid(String openid);
 
+    /** 锁定有效用户行，用于串行化同一用户的“检查后新增”业务。 */
+    public Long lockActiveUser(Long id);
+
     public List<KitchenWxUser> selectKitchenWxUserList(KitchenWxUser kitchenWxUser);
 
     public int insertKitchenWxUser(KitchenWxUser kitchenWxUser);

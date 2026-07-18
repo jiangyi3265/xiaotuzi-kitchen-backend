@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenWxUser;
 import com.ruoyi.kitchen.mapper.KitchenWxUserMapper;
@@ -47,6 +48,26 @@ public class KitchenWxUserServiceImpl implements IKitchenWxUserService
     @Override
     public int updateKitchenWxUser(KitchenWxUser kitchenWxUser)
     {
+        if (kitchenWxUser == null || kitchenWxUser.getId() == null)
+        {
+            throw new ServiceException("缺少用户ID");
+        }
+        if (kitchenWxUser.getIsOwner() != null
+                && !"0".equals(kitchenWxUser.getIsOwner())
+                && !"1".equals(kitchenWxUser.getIsOwner()))
+        {
+            throw new ServiceException("店主状态只能为0或1");
+        }
+        if (kitchenWxUser.getStatus() != null
+                && !"0".equals(kitchenWxUser.getStatus())
+                && !"1".equals(kitchenWxUser.getStatus()))
+        {
+            throw new ServiceException("用户状态只能为0或1");
+        }
+        if (kitchenWxUser.getCarrot() != null && kitchenWxUser.getCarrot() < 0)
+        {
+            throw new ServiceException("积分不能小于0");
+        }
         return kitchenWxUserMapper.updateKitchenWxUser(kitchenWxUser);
     }
 

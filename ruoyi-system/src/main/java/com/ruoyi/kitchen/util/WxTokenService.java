@@ -98,23 +98,42 @@ public class WxTokenService
         }
         // 绝对有效期校验：超过 ABSOLUTE_DAYS 强制失效，防止被盗 token 无限续期
         Object iat = redisCache.getCacheObject(IAT_PREFIX + token);
-        if (iat != null)
+        if (iat == null)
         {
-            long issuedAt = Long.parseLong(iat.toString());
-            if (System.currentTimeMillis() - issuedAt > ABSOLUTE_DAYS * 24L * 60 * 60 * 1000)
-            {
-                redisCache.deleteObject(PREFIX + token);
-                redisCache.deleteObject(IAT_PREFIX + token);
-                return null;
-            }
+            invalidate(token);
+            return null;
+        }
+        long issuedAt;
+        try
+        {
+            issuedAt = Long.parseLong(iat.toString());
+        }
+        catch (NumberFormatException e)
+        {
+            invalidate(token);
+            return null;
+        }
+        long age = System.currentTimeMillis() - issuedAt;
+        if (age < 0 || age > ABSOLUTE_DAYS * 24L * 60 * 60 * 1000)
+        {
+            invalidate(token);
+            return null;
         }
         // 滑动续期（在绝对有效期窗口内）
-        Long userId = Long.valueOf(val.toString());
+        Long userId;
+        try
+        {
+            userId = Long.valueOf(val.toString());
+        }
+        catch (NumberFormatException e)
+        {
+            invalidate(token);
+            return null;
+        }
         KitchenWxUser user = wxUserMapper.selectKitchenWxUserById(userId);
         if (user == null || !"0".equals(user.getStatus()))
         {
-            redisCache.deleteObject(PREFIX + token);
-            redisCache.deleteObject(IAT_PREFIX + token);
+            invalidate(token);
             return null;
         }
         redisCache.expire(PREFIX + token, EXPIRE_DAYS, TimeUnit.DAYS);
@@ -132,5 +151,11 @@ public class WxTokenService
             redisCache.deleteObject(PREFIX + token);
             redisCache.deleteObject(IAT_PREFIX + token);
         }
+    }
+
+    private void invalidate(String token)
+    {
+        redisCache.deleteObject(PREFIX + token);
+        redisCache.deleteObject(IAT_PREFIX + token);
     }
 }

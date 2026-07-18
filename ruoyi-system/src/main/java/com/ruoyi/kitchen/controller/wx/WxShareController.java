@@ -78,6 +78,22 @@ public class WxShareController
         {
             return AjaxResult.error("请填写内容或上传图片");
         }
+        if (post.getTitle() != null && post.getTitle().length() > 64)
+        {
+            return AjaxResult.error("标题最多64个字");
+        }
+        if (post.getContent() != null && post.getContent().length() > 500)
+        {
+            return AjaxResult.error("内容最多500个字");
+        }
+        if (post.getImages() != null && post.getImages().length() > 1000)
+        {
+            return AjaxResult.error("上传图片过多，请减少后重试");
+        }
+        if (post.getTags() != null && post.getTags().length() > 255)
+        {
+            return AjaxResult.error("标签内容过长");
+        }
         if (WxContentFilter.containsBlockedContent(post.getTitle(), post.getContent(), post.getTags()))
         {
             return AjaxResult.error("内容包含不适宜信息，请修改后再发布");

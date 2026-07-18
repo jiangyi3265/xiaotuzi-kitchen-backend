@@ -1,6 +1,7 @@
 package com.ruoyi.kitchen.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import com.ruoyi.kitchen.domain.KitchenWxUser;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.kitchen.mapper.KitchenWxUserMapper;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +25,17 @@ class KitchenWxUserServiceImplTest
 
     @InjectMocks
     private KitchenWxUserServiceImpl service;
+
+    @Test
+    void updateRejectsOwnerValueOutsideZeroAndOne()
+    {
+        KitchenWxUser user = user(7L, "openid-7");
+        user.setIsOwner("Y");
+
+        assertThrows(ServiceException.class, () -> service.updateKitchenWxUser(user));
+
+        verify(mapper, never()).updateKitchenWxUser(any());
+    }
 
     @Test
     void existingActiveUserIsReturnedWithoutWriting()

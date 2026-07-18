@@ -49,7 +49,7 @@ public class KitchenCategoryController extends BaseController
     /**
      * 查询分类树（不分页，用于父级下拉）
      */
-    @PreAuthorize("@ss.hasPermi('kitchen:category:list')")
+    @PreAuthorize("@ss.hasAnyPermi('kitchen:category:list,kitchen:dish:list,kitchen:dish:add,kitchen:dish:edit')")
     @GetMapping("/tree")
     public AjaxResult tree(KitchenCategory kitchenCategory)
     {
@@ -72,7 +72,7 @@ public class KitchenCategoryController extends BaseController
     /**
      * 获取菜品分类详细信息
      */
-    @PreAuthorize("@ss.hasPermi('kitchen:category:query')")
+    @PreAuthorize("@ss.hasAnyPermi('kitchen:category:query,kitchen:category:edit')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {

@@ -1,6 +1,8 @@
 package com.ruoyi.common.core.redis;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +13,9 @@ import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.serializer.GenericToStringSerializer;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,6 +27,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class RedisCache
 {
+    private static final DefaultRedisScript<Long> COMPARE_AND_DELETE = new DefaultRedisScript<>(
+            "if redis.call('get',KEYS[1])==ARGV[1] then return redis.call('del',KEYS[1]) else return 0 end",
+            Long.class);
+
+    private static final DefaultRedisScript<Long> COMPARE_AND_REPLACE = new DefaultRedisScript<>(
+            "if redis.call('get',KEYS[1])==ARGV[1] then redis.call('set',KEYS[1],ARGV[2],'EX',ARGV[3]); return 1 else return 0 end",
+            Long.class);
+
+    private static final RedisSerializer<Long> LUA_RESULT_SERIALIZER =
+            new GenericToStringSerializer<>(Long.class);
+
     @Autowired
     public RedisTemplate redisTemplate;
 
@@ -47,6 +63,60 @@ public class RedisCache
     public <T> void setCacheObject(final String key, final T value, final Integer timeout, final TimeUnit timeUnit)
     {
         redisTemplate.opsForValue().set(key, value, timeout, timeUnit);
+    }
+
+    /** 原子写入一个尚不存在的缓存键。 */
+    public <T> boolean setCacheObjectIfAbsent(final String key, final T value, final long timeout,
+            final TimeUnit timeUnit)
+    {
+        return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, value, timeout, timeUnit));
+    }
+
+    /** 仅当缓存仍属于调用方时删除，避免误删已经被其他请求接管的锁。 */
+    public boolean deleteObjectIfEquals(final String key, final Object expectedValue)
+    {
+        Long result = (Long) redisTemplate.execute(COMPARE_AND_DELETE, scriptArgumentSerializer(),
+                LUA_RESULT_SERIALIZER, Collections.singletonList(key), expectedValue);
+        return result != null && result > 0;
+    }
+
+    /** 仅当缓存仍是预期值时原子替换，并刷新有效期。 */
+    public boolean replaceObjectIfEquals(final String key, final Object expectedValue, final Object value,
+            final long timeout, final TimeUnit timeUnit)
+    {
+        long seconds = Math.max(1L, timeUnit.toSeconds(timeout));
+        Long result = (Long) redisTemplate.execute(COMPARE_AND_REPLACE, scriptArgumentSerializer(),
+                LUA_RESULT_SERIALIZER, Collections.singletonList(key),
+                expectedValue, value, seconds);
+        return result != null && result > 0;
+    }
+
+    /**
+     * Lua 的比较值必须沿用项目 FastJson 序列化，否则无法与 Redis 中已有字节相等；
+     * 但 EX 的 TTL 必须是原始十进制，不能被 FastJson 写成 15L。
+     */
+    @SuppressWarnings("unchecked")
+    RedisSerializer<Object> scriptArgumentSerializer()
+    {
+        final RedisSerializer<Object> valueSerializer = redisTemplate.getValueSerializer();
+        return new RedisSerializer<Object>()
+        {
+            @Override
+            public byte[] serialize(Object value)
+            {
+                if (value instanceof Number)
+                {
+                    return value.toString().getBytes(StandardCharsets.UTF_8);
+                }
+                return valueSerializer.serialize(value);
+            }
+
+            @Override
+            public Object deserialize(byte[] bytes)
+            {
+                return valueSerializer.deserialize(bytes);
+            }
+        };
     }
 
     /**

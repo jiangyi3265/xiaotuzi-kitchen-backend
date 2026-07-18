@@ -21,12 +21,13 @@
     order by id desc
   </select>
   <select id="selectById" resultMap="Result">select * from kitchen_service_application where id=#{id}</select>
+  <select id="selectByIdForUpdate" resultMap="Result">select * from kitchen_service_application where id=#{id} for update</select>
   <select id="selectLatestByUserAndType" resultMap="Result">select * from kitchen_service_application where wx_user_id=#{wxUserId} and application_type=#{applicationType} order by id desc limit 1</select>
   <insert id="insert" useGeneratedKeys="true" keyProperty="id">
     insert into kitchen_service_application(wx_user_id,application_type,applicant_name,phone,province,city,district,address,experience,skill_tag,vehicle_type,audit_status,create_time)
     values(#{wxUserId},#{applicationType},#{applicantName},#{phone},#{province},#{city},#{district},#{address},#{experience},#{skillTag},#{vehicleType},'0',sysdate())
   </insert>
-  <update id="audit">update kitchen_service_application set audit_status=#{auditStatus},remark=#{remark},provider_id=#{providerId},update_time=sysdate() where id=#{id}</update>
+  <update id="audit">update kitchen_service_application set audit_status=#{auditStatus},remark=#{remark},provider_id=#{providerId},update_time=sysdate() where id=#{id} and audit_status='0'</update>
   <insert id="insertRiderProvider" parameterType="map" useGeneratedKeys="true" keyProperty="id">
     insert into kitchen_rider(rider_name,tag,intro,delivery_fee,est_time,status,order_num,create_by,create_time,del_flag)
     values(#{name},#{tag},#{intro},0,'约30分钟','0',0,'service-application',sysdate(),'0')

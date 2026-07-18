@@ -35,14 +35,19 @@ public class TableSupport
      */
     public static final String REASONABLE = "reasonable";
 
+    /** 防止公开列表被超大 pageSize 拖垮；当前首页最多读取 500 条菜谱。 */
+    public static final int MAX_PAGE_SIZE = 500;
+
     /**
      * 封装分页对象
      */
     public static PageDomain getPageDomain()
     {
         PageDomain pageDomain = new PageDomain();
-        pageDomain.setPageNum(Convert.toInt(ServletUtils.getParameter(PAGE_NUM), 1));
-        pageDomain.setPageSize(Convert.toInt(ServletUtils.getParameter(PAGE_SIZE), 10));
+        int pageNum = Convert.toInt(ServletUtils.getParameter(PAGE_NUM), 1);
+        int pageSize = Convert.toInt(ServletUtils.getParameter(PAGE_SIZE), 10);
+        pageDomain.setPageNum(Math.max(pageNum, 1));
+        pageDomain.setPageSize(Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE)));
         pageDomain.setOrderByColumn(ServletUtils.getParameter(ORDER_BY_COLUMN));
         pageDomain.setIsAsc(ServletUtils.getParameter(IS_ASC));
         pageDomain.setReasonable(ServletUtils.getParameterToBool(REASONABLE));

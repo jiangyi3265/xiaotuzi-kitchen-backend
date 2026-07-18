@@ -63,6 +63,18 @@ public class KitchenSharePostServiceImpl implements IKitchenSharePostService
     @Override
     public int audit(Long id, String auditStatus)
     {
+        if (id == null)
+        {
+            throw new ServiceException("动态ID不能为空");
+        }
+        if (!"1".equals(auditStatus) && !"2".equals(auditStatus))
+        {
+            throw new ServiceException("审核状态只能为通过或驳回");
+        }
+        if (kitchenSharePostMapper.selectKitchenSharePostById(id) == null)
+        {
+            throw new ServiceException("动态不存在或已删除");
+        }
         KitchenSharePost post = new KitchenSharePost();
         post.setId(id);
         post.setAuditStatus(auditStatus);

@@ -10,13 +10,7 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.X509Certificate;
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.ruoyi.common.constant.Constants;
@@ -31,6 +25,11 @@ import org.springframework.http.MediaType;
 public class HttpUtils
 {
     private static final Logger log = LoggerFactory.getLogger(HttpUtils.class);
+
+    /** 外部接口连接与读取超时，避免第三方网络异常耗尽业务线程。 */
+    private static final int CONNECT_TIMEOUT_MS = 5000;
+
+    private static final int READ_TIMEOUT_MS = 10000;
 
     /**
      * 向指定 URL 发送GET方法的请求
@@ -70,9 +69,11 @@ public class HttpUtils
         try
         {
             String urlNameString = StringUtils.isNotBlank(param) ? url + "?" + param : url;
-            log.info("sendGet - {}", urlNameString);
+            log.debug("sendGet - {}", sanitizeUrlForLog(urlNameString));
             URL realUrl = new URL(urlNameString);
             URLConnection connection = realUrl.openConnection();
+            connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            connection.setReadTimeout(READ_TIMEOUT_MS);
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
             connection.setRequestProperty("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
@@ -83,23 +84,23 @@ public class HttpUtils
             {
                 result.append(line);
             }
-            log.info("recv - {}", result);
+            log.debug("sendGet completed - {}, responseLength={}", sanitizeUrlForLog(urlNameString), result.length());
         }
         catch (ConnectException e)
         {
-            log.error("调用HttpUtils.sendGet ConnectException, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendGet", url, e);
         }
         catch (SocketTimeoutException e)
         {
-            log.error("调用HttpUtils.sendGet SocketTimeoutException, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendGet", url, e);
         }
         catch (IOException e)
         {
-            log.error("调用HttpUtils.sendGet IOException, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendGet", url, e);
         }
         catch (Exception e)
         {
-            log.error("调用HttpsUtil.sendGet Exception, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendGet", url, e);
         }
         finally
         {
@@ -112,7 +113,7 @@ public class HttpUtils
             }
             catch (Exception ex)
             {
-                log.error("调用in.close Exception, url=" + url + ",param=" + param, ex);
+                logFailure("HttpUtils.sendGet.close", url, ex);
             }
         }
         return result.toString();
@@ -145,9 +146,11 @@ public class HttpUtils
         StringBuilder result = new StringBuilder();
         try
         {
-            log.info("sendPost - {}", url);
+            log.debug("sendPost - {}", sanitizeUrlForLog(url));
             URL realUrl = new URL(url);
             URLConnection conn = realUrl.openConnection();
+            conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(READ_TIMEOUT_MS);
             conn.setRequestProperty("accept", "*/*");
             conn.setRequestProperty("connection", "Keep-Alive");
             conn.setRequestProperty("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
@@ -164,23 +167,23 @@ public class HttpUtils
             {
                 result.append(line);
             }
-            log.info("recv - {}", result);
+            log.debug("sendPost completed - {}, responseLength={}", sanitizeUrlForLog(url), result.length());
         }
         catch (ConnectException e)
         {
-            log.error("调用HttpUtils.sendPost ConnectException, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendPost", url, e);
         }
         catch (SocketTimeoutException e)
         {
-            log.error("调用HttpUtils.sendPost SocketTimeoutException, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendPost", url, e);
         }
         catch (IOException e)
         {
-            log.error("调用HttpUtils.sendPost IOException, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendPost", url, e);
         }
         catch (Exception e)
         {
-            log.error("调用HttpsUtil.sendPost Exception, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendPost", url, e);
         }
         finally
         {
@@ -197,7 +200,7 @@ public class HttpUtils
             }
             catch (IOException ex)
             {
-                log.error("调用in.close Exception, url=" + url + ",param=" + param, ex);
+                logFailure("HttpUtils.sendPost.close", url, ex);
             }
         }
         return result.toString();
@@ -214,11 +217,11 @@ public class HttpUtils
         String urlNameString = url + "?" + param;
         try
         {
-            log.info("sendSSLPost - {}", urlNameString);
-            SSLContext sc = SSLContext.getInstance("SSL");
-            sc.init(null, new TrustManager[] { new TrustAnyTrustManager() }, new java.security.SecureRandom());
+            log.debug("sendSSLPost - {}", sanitizeUrlForLog(urlNameString));
             URL console = new URL(urlNameString);
             HttpsURLConnection conn = (HttpsURLConnection) console.openConnection();
+            conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(READ_TIMEOUT_MS);
             conn.setRequestProperty("accept", "*/*");
             conn.setRequestProperty("connection", "Keep-Alive");
             conn.setRequestProperty("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
@@ -227,8 +230,6 @@ public class HttpUtils
             conn.setDoOutput(true);
             conn.setDoInput(true);
 
-            conn.setSSLSocketFactory(sc.getSocketFactory());
-            conn.setHostnameVerifier(new TrustAnyHostnameVerifier());
             conn.connect();
             InputStream is = conn.getInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
@@ -240,54 +241,46 @@ public class HttpUtils
                     result.append(new String(ret.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8));
                 }
             }
-            log.info("recv - {}", result);
+            log.debug("sendSSLPost completed - {}, responseLength={}", sanitizeUrlForLog(urlNameString), result.length());
             conn.disconnect();
             br.close();
         }
         catch (ConnectException e)
         {
-            log.error("调用HttpUtils.sendSSLPost ConnectException, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendSSLPost", url, e);
         }
         catch (SocketTimeoutException e)
         {
-            log.error("调用HttpUtils.sendSSLPost SocketTimeoutException, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendSSLPost", url, e);
         }
         catch (IOException e)
         {
-            log.error("调用HttpUtils.sendSSLPost IOException, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendSSLPost", url, e);
         }
         catch (Exception e)
         {
-            log.error("调用HttpsUtil.sendSSLPost Exception, url=" + url + ",param=" + param, e);
+            logFailure("HttpUtils.sendSSLPost", url, e);
         }
         return result.toString();
     }
 
-    private static class TrustAnyTrustManager implements X509TrustManager
+    /**
+     * 日志中只保留目标地址，不记录 query，避免 AppSecret、登录 code、密码等敏感参数落盘。
+     */
+    static String sanitizeUrlForLog(String url)
     {
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType)
+        if (url == null)
         {
+            return "";
         }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType)
-        {
-        }
-
-        @Override
-        public X509Certificate[] getAcceptedIssuers()
-        {
-            return new X509Certificate[] {};
-        }
+        int queryIndex = url.indexOf('?');
+        return queryIndex < 0 ? url : url.substring(0, queryIndex) + "?[redacted]";
     }
 
-    private static class TrustAnyHostnameVerifier implements HostnameVerifier
+    /** 异常消息本身也可能携带完整 URL，因此只记录类型，不把异常对象写入日志。 */
+    private static void logFailure(String operation, String url, Exception exception)
     {
-        @Override
-        public boolean verify(String hostname, SSLSession session)
-        {
-            return true;
-        }
+        log.error("{} failed, url={}, errorType={}", operation, sanitizeUrlForLog(url),
+                exception.getClass().getSimpleName());
     }
 }

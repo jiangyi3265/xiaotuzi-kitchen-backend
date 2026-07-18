@@ -22,6 +22,8 @@ import com.ruoyi.kitchen.service.IKitchenOrderService;
 import com.ruoyi.kitchen.mapper.KitchenSocialMapper;
 import com.ruoyi.kitchen.mapper.KitchenOrderMapper;
 import com.ruoyi.kitchen.util.WxPageUtils;
+import com.ruoyi.kitchen.util.WxOrderIdempotencyService;
+import com.ruoyi.kitchen.util.WxOrderIdempotencyService.Submission;
 import com.ruoyi.kitchen.util.WxTokenService;
 import com.ruoyi.kitchen.web.WxFeatureRequired;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,6 +51,9 @@ public class WxOrderController
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private WxOrderIdempotencyService orderIdempotencyService;
+
     /**
      * 小程序：提交订单。
      */
@@ -59,6 +64,15 @@ public class WxOrderController
     public AjaxResult submit(@RequestBody KitchenOrder kitchenOrder, HttpServletRequest request)
     {
         Long userId = wxTokenService.getRequiredUserId(request);
+        Submission submission = orderIdempotencyService.begin(userId, kitchenOrder);
+        if (submission.getCachedResult() != null)
+        {
+            return submission.getCachedResult();
+        }
+        if (!submission.isAcquired())
+        {
+            return AjaxResult.error("订单正在提交，请勿重复操作");
+        }
         kitchenOrder.setWxUserId(userId);
         boolean remoteFeed = "1".equals(kitchenOrder.getRemoteFeed());
         boolean coupleOrder = "1".equals(kitchenOrder.getCoupleOrder());
@@ -160,6 +174,7 @@ public class WxOrderController
         ajax.put("totalAmount", result.getTotalAmount());
         ajax.put("groupRoomId", result.getGroupRoomId());
         ajax.put("coupleSpaceId", result.getCoupleSpaceId());
+        orderIdempotencyService.markSuccessful(submission, ajax);
         return ajax;
     }
 

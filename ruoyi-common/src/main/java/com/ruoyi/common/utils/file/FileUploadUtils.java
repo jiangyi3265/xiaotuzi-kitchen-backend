@@ -2,7 +2,9 @@ package com.ruoyi.common.utils.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.Objects;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,6 +29,9 @@ public class FileUploadUtils
      * 默认大小 50M
      */
     public static final long DEFAULT_MAX_SIZE = 50 * 1024 * 1024L;
+
+    /** 图片用于公开展示，单张限制为 10M。 */
+    public static final long IMAGE_MAX_SIZE = 10 * 1024 * 1024L;
 
     /**
      * 默认的文件名最大长度 100
@@ -184,16 +189,18 @@ public class FileUploadUtils
      * @throws InvalidExtensionException
      */
     public static final void assertAllowed(MultipartFile file, String[] allowedExtension)
-            throws FileSizeLimitExceededException, InvalidExtensionException
+            throws FileSizeLimitExceededException, InvalidExtensionException, IOException
     {
-        long size = file.getSize();
-        if (size > DEFAULT_MAX_SIZE)
-        {
-            throw new FileSizeLimitExceededException(DEFAULT_MAX_SIZE / 1024 / 1024);
-        }
-
         String fileName = file.getOriginalFilename();
         String extension = getExtension(file);
+        boolean imageFile = isAllowedExtension(extension, MimeTypeUtils.IMAGE_EXTENSION);
+        long size = file.getSize();
+        long maxSize = imageFile ? IMAGE_MAX_SIZE : DEFAULT_MAX_SIZE;
+        if (size > maxSize)
+        {
+            throw new FileSizeLimitExceededException(maxSize / 1024 / 1024);
+        }
+
         if (allowedExtension != null && !isAllowedExtension(extension, allowedExtension))
         {
             if (allowedExtension == MimeTypeUtils.IMAGE_EXTENSION)
@@ -221,6 +228,60 @@ public class FileUploadUtils
                 throw new InvalidExtensionException(allowedExtension, extension, fileName);
             }
         }
+        // 即使走通用上传白名单，只要扩展名是图片也必须校验文件头。
+        if (imageFile && !hasMatchingImageSignature(file, extension))
+        {
+            throw new InvalidExtensionException.InvalidImageExtensionException(allowedExtension, extension, fileName);
+        }
+    }
+
+    /**
+     * 扩展名不能证明文件真是图片；校验常用图片的文件头，阻止脚本/压缩包伪装成图片公开托管。
+     */
+    private static boolean hasMatchingImageSignature(MultipartFile file, String extension) throws IOException
+    {
+        byte[] header = new byte[12];
+        int length;
+        try (InputStream input = file.getInputStream())
+        {
+            length = input.read(header);
+        }
+        if (length < 2)
+        {
+            return false;
+        }
+        String ext = StringUtils.defaultString(extension).toLowerCase(Locale.ROOT);
+        if ("jpg".equals(ext) || "jpeg".equals(ext))
+        {
+            return length >= 3 && (header[0] & 0xff) == 0xff && (header[1] & 0xff) == 0xd8
+                    && (header[2] & 0xff) == 0xff;
+        }
+        if ("png".equals(ext))
+        {
+            int[] signature = { 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a };
+            if (length < signature.length)
+            {
+                return false;
+            }
+            for (int i = 0; i < signature.length; i++)
+            {
+                if ((header[i] & 0xff) != signature[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if ("gif".equals(ext))
+        {
+            return length >= 6 && header[0] == 'G' && header[1] == 'I' && header[2] == 'F'
+                    && header[3] == '8' && (header[4] == '7' || header[4] == '9') && header[5] == 'a';
+        }
+        if ("bmp".equals(ext))
+        {
+            return header[0] == 'B' && header[1] == 'M';
+        }
+        return false;
     }
 
     /**

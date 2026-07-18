@@ -53,7 +53,7 @@ public class KitchenDishController extends BaseController
         util.exportExcel(response, list, "菜品数据");
     }
 
-    @PreAuthorize("@ss.hasPermi('kitchen:dish:query')")
+    @PreAuthorize("@ss.hasAnyPermi('kitchen:dish:query,kitchen:dish:edit')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {

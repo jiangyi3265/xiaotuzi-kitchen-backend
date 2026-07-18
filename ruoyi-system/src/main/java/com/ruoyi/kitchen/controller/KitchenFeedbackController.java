@@ -9,6 +9,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenFeedback;
 import com.ruoyi.kitchen.mapper.KitchenFeedbackMapper;
 
@@ -20,5 +21,11 @@ public class KitchenFeedbackController extends BaseController {
     @GetMapping("/list") public TableDataInfo list(KitchenFeedback query) { startPage(); List<KitchenFeedback> rows=mapper.selectList(query); return getDataTable(rows); }
     @PreAuthorize("@ss.hasPermi('kitchen:feedback:handle')")
     @Log(title="反馈与建议处理",businessType=BusinessType.UPDATE)
-    @PutMapping("/handle") public AjaxResult handle(@RequestBody KitchenFeedback feedback) { if(feedback.getId()==null)return AjaxResult.error("反馈不存在"); if(feedback.getHandleStatus()==null)feedback.setHandleStatus("2"); return toAjax(mapper.handle(feedback)); }
+    @PutMapping("/handle") public AjaxResult handle(@RequestBody KitchenFeedback feedback) {
+        if(feedback.getId()==null)return AjaxResult.error("反馈不存在");
+        if(!"1".equals(feedback.getHandleStatus())&&!"2".equals(feedback.getHandleStatus()))return AjaxResult.error("处理状态无效");
+        if(feedback.getReply()!=null&&feedback.getReply().length()>1000)return AjaxResult.error("回复最多1000个字");
+        if("2".equals(feedback.getHandleStatus())&&StringUtils.isBlank(feedback.getReply()))return AjaxResult.error("标记已回复时必须填写回复内容");
+        return toAjax(mapper.handle(feedback));
+    }
 }
