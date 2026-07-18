@@ -37,6 +37,11 @@ public interface IKitchenOrderService
      */
     public int changeOrderStatus(Long id, String orderStatus);
 
+    /**
+     * 后台确认线下收款状态。
+     */
+    public int changePayStatus(Long id, String payStatus);
+
     /** 用户确认完成，仅制作中的本人订单可更新 */
     public int completeOrder(Long id, Long wxUserId);
 

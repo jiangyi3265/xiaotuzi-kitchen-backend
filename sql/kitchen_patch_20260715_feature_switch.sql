@@ -68,3 +68,42 @@ set parent_id = @kitchen_menu_id,
     order_num = 15
 where component = 'applet/switch/index'
   and @kitchen_menu_id is not null;
+
+-- 修改权限独立于查看权限；运营角色无需获得 system:config:* 即可安全操作固定开关。
+set @applet_switch_menu_id := (
+  select menu_id
+  from sys_menu
+  where component = 'applet/switch/index'
+  order by menu_id
+  limit 1
+);
+
+insert into sys_menu
+  (menu_name, parent_id, order_num, path, component, query, route_name,
+   is_frame, is_cache, menu_type, visible, status, perms, icon,
+   create_by, create_time, update_by, update_time, remark)
+select
+  '小程序开关修改',
+  @applet_switch_menu_id,
+  1,
+  '#',
+  '',
+  null,
+  '',
+  1,
+  0,
+  'F',
+  '0',
+  '0',
+  'applet:switch:edit',
+  '#',
+  'admin',
+  sysdate(),
+  '',
+  null,
+  '允许修改固定配置 wx.feature.enabled'
+from dual
+where @applet_switch_menu_id is not null
+  and not exists (
+    select 1 from sys_menu where perms = 'applet:switch:edit'
+  );

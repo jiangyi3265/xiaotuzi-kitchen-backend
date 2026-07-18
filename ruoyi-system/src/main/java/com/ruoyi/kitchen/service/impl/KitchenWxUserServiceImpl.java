@@ -2,6 +2,7 @@ package com.ruoyi.kitchen.service.impl;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenWxUser;
@@ -69,6 +70,15 @@ public class KitchenWxUserServiceImpl implements IKitchenWxUserService
         {
             return user;
         }
+
+        // 后台删除采用逻辑删除，openid 仍受唯一索引保护。用户再次登录时恢复原 ID，
+        // 这样历史订单、分享等关系不会断开；恢复时 Mapper 会撤销店主权限。
+        user = restoreDeletedUser(openid);
+        if (user != null)
+        {
+            return user;
+        }
+
         user = new KitchenWxUser();
         user.setOpenid(openid);
         user.setUnionId(StringUtils.isNotBlank(unionId) ? unionId : "");
@@ -79,7 +89,39 @@ public class KitchenWxUserServiceImpl implements IKitchenWxUserService
         user.setGender("0");
         user.setCarrot(0);
         user.setStatus("0");
-        kitchenWxUserMapper.insertKitchenWxUser(user);
-        return user;
+        try
+        {
+            kitchenWxUserMapper.insertKitchenWxUser(user);
+            // 回读数据库默认字段（如 is_owner、create_time），保证首登响应与持久化状态一致。
+            KitchenWxUser created = kitchenWxUserMapper.selectKitchenWxUserById(user.getId());
+            return created != null ? created : user;
+        }
+        catch (DuplicateKeyException e)
+        {
+            // 同一微信用户并发发起登录时，另一请求可能已经完成插入或恢复。
+            KitchenWxUser concurrent = kitchenWxUserMapper.selectKitchenWxUserByOpenid(openid);
+            if (concurrent != null)
+            {
+                return concurrent;
+            }
+            concurrent = restoreDeletedUser(openid);
+            if (concurrent != null)
+            {
+                return concurrent;
+            }
+            throw e;
+        }
+    }
+
+    private KitchenWxUser restoreDeletedUser(String openid)
+    {
+        // 不把“查询 + 恢复 + 新增”包在同一个 REPEATABLE READ 事务中：并发登录时
+        // 普通查询快照可能看不到另一请求刚恢复/新增的记录。这里直接按唯一 openid
+        // 原子恢复；每个 Mapper 调用独立提交，后续查询可以看到并发请求的结果。
+        if (kitchenWxUserMapper.restoreKitchenWxUserByOpenid(openid) <= 0)
+        {
+            return null;
+        }
+        return kitchenWxUserMapper.selectKitchenWxUserByOpenid(openid);
     }
 }

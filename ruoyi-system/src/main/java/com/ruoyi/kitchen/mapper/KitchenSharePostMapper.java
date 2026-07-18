@@ -22,6 +22,9 @@ public interface KitchenSharePostMapper
 
     public int deleteKitchenSharePostByIds(Long[] ids);
 
+    /** 锁定仍公开的帖子；不存在、待审、驳回或已删除时返回 null */
+    public Long lockPublishedPost(Long id);
+
     /** 点赞 +1 */
     public int addLike(Long id);
 

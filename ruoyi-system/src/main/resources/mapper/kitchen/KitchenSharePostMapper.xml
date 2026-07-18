@@ -49,6 +49,13 @@
         where p.id = #{id} and p.del_flag = '0'
     </select>
 
+    <select id="lockPublishedPost" parameterType="Long" resultType="Long">
+        select id
+        from kitchen_share_post
+        where id = #{id} and del_flag = '0' and audit_status = '1'
+        for update
+    </select>
+
     <insert id="insertKitchenSharePost" parameterType="KitchenSharePost" useGeneratedKeys="true" keyProperty="id">
         insert into kitchen_share_post
         <trim prefix="(" suffix=")" suffixOverrides=",">

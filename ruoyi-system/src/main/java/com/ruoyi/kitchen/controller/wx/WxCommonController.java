@@ -13,6 +13,7 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.common.utils.file.FileUtils;
 import com.ruoyi.common.utils.file.MimeTypeUtils;
+import com.ruoyi.kitchen.util.WxMediaUrlUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
 import com.ruoyi.system.service.ISysConfigService;
 
@@ -62,7 +63,7 @@ public class WxCommonController
             String filePath = RuoYiConfig.getUploadPath();
             // 仅允许图片扩展名，杜绝上传 html/脚本等可被直出的文件
             String fileName = FileUploadUtils.upload(filePath, file, MimeTypeUtils.IMAGE_EXTENSION);
-            String url = buildBaseUrl(request) + fileName;
+            String url = WxMediaUrlUtils.buildPublicBaseUrl(request) + fileName;
             AjaxResult ajax = AjaxResult.success();
             ajax.put("url", url);
             ajax.put("fileName", fileName);
@@ -76,22 +77,4 @@ public class WxCommonController
         }
     }
 
-    /**
-     * 基于请求构造访问域名（替代 framework 的 ServerConfig，避免跨模块依赖）
-     */
-    private String buildBaseUrl(HttpServletRequest request)
-    {
-        String scheme = request.getScheme();
-        String host = request.getServerName();
-        int port = request.getServerPort();
-        String contextPath = request.getContextPath();
-        StringBuilder sb = new StringBuilder();
-        sb.append(scheme).append("://").append(host);
-        if (!("http".equals(scheme) && port == 80) && !("https".equals(scheme) && port == 443))
-        {
-            sb.append(":").append(port);
-        }
-        sb.append(contextPath);
-        return sb.toString();
-    }
 }

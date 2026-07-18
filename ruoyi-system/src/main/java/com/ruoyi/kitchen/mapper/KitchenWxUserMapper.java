@@ -25,6 +25,11 @@ public interface KitchenWxUserMapper
 
     public int deleteKitchenWxUserByIds(Long[] ids);
 
+    /**
+     * 恢复逻辑删除用户。恢复时撤销店主权限，避免被删除的高权限账号重新登录后自动取回管理权。
+     */
+    public int restoreKitchenWxUserByOpenid(String openid);
+
     /** 原子扣减胡萝卜积分（余额不足返回 0，不会扣成负数） */
     public int deductCarrot(@Param("id") Long id, @Param("amount") Integer amount);
 }

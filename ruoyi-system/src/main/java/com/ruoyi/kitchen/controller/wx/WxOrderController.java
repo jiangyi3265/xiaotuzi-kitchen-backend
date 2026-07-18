@@ -23,6 +23,7 @@ import com.ruoyi.kitchen.mapper.KitchenSocialMapper;
 import com.ruoyi.kitchen.mapper.KitchenOrderMapper;
 import com.ruoyi.kitchen.util.WxPageUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
+import com.ruoyi.kitchen.web.WxFeatureRequired;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -53,6 +54,7 @@ public class WxOrderController
      */
     @Anonymous
     @PostMapping("/submit")
+    @WxFeatureRequired
     @Transactional
     public AjaxResult submit(@RequestBody KitchenOrder kitchenOrder, HttpServletRequest request)
     {

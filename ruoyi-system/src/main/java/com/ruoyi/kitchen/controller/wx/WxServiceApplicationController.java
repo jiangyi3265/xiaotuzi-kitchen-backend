@@ -9,6 +9,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenServiceApplication;
 import com.ruoyi.kitchen.mapper.KitchenServiceApplicationMapper;
 import com.ruoyi.kitchen.util.WxTokenService;
+import com.ruoyi.kitchen.web.WxFeatureRequired;
 
 @RestController
 @RequestMapping("/api/wx/service-application")
@@ -26,6 +27,7 @@ public class WxServiceApplicationController {
 
     @Anonymous
     @PostMapping("/apply")
+    @WxFeatureRequired
     public AjaxResult apply(@RequestBody KitchenServiceApplication application,HttpServletRequest request) {
         Long userId=tokenService.getRequiredUserId(request);
         if(!validType(application.getApplicationType())) return AjaxResult.error("申请类型无效");

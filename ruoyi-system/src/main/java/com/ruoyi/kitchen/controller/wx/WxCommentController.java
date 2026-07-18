@@ -20,6 +20,7 @@ import com.ruoyi.kitchen.service.IKitchenSharePostService;
 import com.ruoyi.kitchen.util.WxContentFilter;
 import com.ruoyi.kitchen.util.WxPageUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
+import com.ruoyi.kitchen.web.WxFeatureRequired;
 
 /**
  * 成品评论Controller（微信小程序端）
@@ -61,6 +62,7 @@ public class WxCommentController
      */
     @Anonymous
     @PostMapping("/add")
+    @WxFeatureRequired
     public AjaxResult add(@RequestBody KitchenComment comment, HttpServletRequest request)
     {
         Long userId = wxTokenService.getRequiredUserId(request);

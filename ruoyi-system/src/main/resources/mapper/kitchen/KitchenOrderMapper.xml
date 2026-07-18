@@ -150,6 +150,7 @@
             <if test="orderStatus != null">order_status = #{orderStatus},</if>
             <if test="payStatus != null">pay_status = #{payStatus},</if>
             <if test="chefId != null">chef_id = #{chefId},</if>
+            <if test="riderId != null">rider_id = #{riderId},</if>
             <if test="receiverName != null">receiver_name = #{receiverName},</if>
             <if test="receiverPhone != null">receiver_phone = #{receiverPhone},</if>
             <if test="receiverAddress != null">receiver_address = #{receiverAddress},</if>
@@ -157,7 +158,19 @@
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = sysdate()
         </trim>
-        where id = #{id}
+        where id = #{id} and del_flag = '0'
+    </update>
+
+    <update id="updateOrderStatus">
+        update kitchen_order
+        set order_status = #{newStatus}, update_time = sysdate()
+        where id = #{id} and order_status = #{oldStatus} and del_flag = '0'
+    </update>
+
+    <update id="updatePayStatus">
+        update kitchen_order
+        set pay_status = #{newStatus}, update_time = sysdate()
+        where id = #{id} and pay_status = #{oldStatus} and del_flag = '0'
     </update>
 
     <update id="completeOrder">

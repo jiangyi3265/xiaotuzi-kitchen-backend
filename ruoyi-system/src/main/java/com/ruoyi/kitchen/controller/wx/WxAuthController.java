@@ -96,7 +96,7 @@ public class WxAuthController
         }
 
         KitchenWxUser user = wxUserService.registerOrGet(openid, unionId);
-        if ("1".equals(user.getStatus()))
+        if (user == null || !"0".equals(user.getStatus()))
         {
             return AjaxResult.error("账号已被停用");
         }
@@ -110,9 +110,18 @@ public class WxAuthController
             update.setId(user.getId());
             update.setNickname(nickname);
             update.setAvatar(avatar);
-            wxUserService.updateKitchenWxUser(update);
+            if (wxUserService.updateKitchenWxUser(update) <= 0)
+            {
+                return AjaxResult.error("账号状态已变更，请重新登录");
+            }
         }
 
+        // 签发 token 前统一回读：既返回刚写入的资料，也避免后台并发删除/停用后仍假登录成功。
+        user = wxUserService.selectKitchenWxUserById(user.getId());
+        if (user == null || !"0".equals(user.getStatus()))
+        {
+            return AjaxResult.error("账号状态已变更，请重新登录");
+        }
         String token = wxTokenService.createToken(user.getId());
         AjaxResult ajax = AjaxResult.success();
         ajax.put("token", token);

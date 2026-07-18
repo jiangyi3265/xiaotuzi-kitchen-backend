@@ -11,6 +11,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenRegionApplication;
 import com.ruoyi.kitchen.mapper.KitchenRegionApplicationMapper;
 import com.ruoyi.kitchen.util.WxTokenService;
+import com.ruoyi.kitchen.web.WxFeatureRequired;
 
 @RestController
 @RequestMapping("/api/wx/region")
@@ -23,7 +24,7 @@ public class WxRegionApplicationController {
         Long uid=tokenService.getUserId(request); KitchenRegionApplication latest=uid==null?null:mapper.selectLatestByUser(uid);
         Map<String,Object> data=new HashMap<>(); data.put("opened",opened); data.put("application",latest); return AjaxResult.success(data);
     }
-    @Anonymous @PostMapping("/apply") public AjaxResult apply(@RequestBody KitchenRegionApplication a, HttpServletRequest request) {
+    @Anonymous @PostMapping("/apply") @WxFeatureRequired public AjaxResult apply(@RequestBody KitchenRegionApplication a, HttpServletRequest request) {
         Long uid=tokenService.getRequiredUserId(request);
         if(StringUtils.isBlank(a.getApplicantName())||StringUtils.isBlank(a.getPhone())||StringUtils.isBlank(a.getProvince())||StringUtils.isBlank(a.getCity())||StringUtils.isBlank(a.getDistrict())) return AjaxResult.error("请完整填写申请信息");
         KitchenRegionApplication old=mapper.selectLatestByUser(uid); if(old!=null&&"0".equals(old.getAuditStatus())) return AjaxResult.error("申请正在审核中，请勿重复提交");

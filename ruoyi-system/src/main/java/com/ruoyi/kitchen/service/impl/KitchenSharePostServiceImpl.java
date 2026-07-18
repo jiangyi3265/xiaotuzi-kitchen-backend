@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.kitchen.domain.KitchenSharePost;
 import com.ruoyi.kitchen.mapper.KitchenPostLikeMapper;
 import com.ruoyi.kitchen.mapper.KitchenSharePostMapper;
@@ -82,17 +83,32 @@ public class KitchenSharePostServiceImpl implements IKitchenSharePostService
     @Transactional(rollbackFor = Exception.class)
     public boolean toggleLike(Long postId, Long wxUserId)
     {
+        if (postId == null || wxUserId == null)
+        {
+            throw new ServiceException("点赞参数不完整");
+        }
+        // 同一帖子上的点赞切换统一串行化；同时确保帖子仍真实存在且已经公开。
+        if (kitchenSharePostMapper.lockPublishedPost(postId) == null)
+        {
+            throw new ServiceException("动态不存在或尚未公开");
+        }
         boolean liked = kitchenPostLikeMapper.countLike(postId, wxUserId) > 0;
         if (liked)
         {
-            kitchenPostLikeMapper.deleteLike(postId, wxUserId);
-            kitchenSharePostMapper.decLike(postId);
+            if (kitchenPostLikeMapper.deleteLike(postId, wxUserId) <= 0
+                    || kitchenSharePostMapper.decLike(postId) <= 0)
+            {
+                throw new ServiceException("取消点赞失败，请稍后重试");
+            }
             return false;
         }
         else
         {
-            kitchenPostLikeMapper.insertLike(postId, wxUserId);
-            kitchenSharePostMapper.addLike(postId);
+            if (kitchenPostLikeMapper.insertLike(postId, wxUserId) <= 0
+                    || kitchenSharePostMapper.addLike(postId) <= 0)
+            {
+                throw new ServiceException("点赞失败，请稍后重试");
+            }
             return true;
         }
     }

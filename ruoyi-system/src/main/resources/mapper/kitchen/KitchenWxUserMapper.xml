@@ -93,7 +93,7 @@
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = sysdate()
         </trim>
-        where id = #{id}
+        where id = #{id} and del_flag = '0'
     </update>
 
     <update id="deductCarrot">
@@ -108,6 +108,12 @@
     <update id="deleteKitchenWxUserByIds" parameterType="String">
         update kitchen_wx_user set del_flag = '2' where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="restoreKitchenWxUserByOpenid" parameterType="String">
+        update kitchen_wx_user
+        set del_flag = '0', is_owner = '0', update_time = sysdate()
+        where openid = #{openid} and del_flag = '2'
     </update>
 
 </mapper>

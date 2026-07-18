@@ -20,6 +20,7 @@ import com.ruoyi.kitchen.service.IKitchenSharePostService;
 import com.ruoyi.kitchen.util.WxContentFilter;
 import com.ruoyi.kitchen.util.WxPageUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
+import com.ruoyi.kitchen.web.WxFeatureRequired;
 
 /**
  * 分享广场Controller（微信小程序端）
@@ -69,6 +70,7 @@ public class WxShareController
      */
     @Anonymous
     @PostMapping("/publish")
+    @WxFeatureRequired
     public AjaxResult publish(@RequestBody KitchenSharePost post, HttpServletRequest request)
     {
         Long userId = wxTokenService.getRequiredUserId(request);
@@ -92,6 +94,7 @@ public class WxShareController
      */
     @Anonymous
     @PostMapping("/like/{id}")
+    @WxFeatureRequired
     public AjaxResult like(@PathVariable("id") Long id, HttpServletRequest request)
     {
         Long userId = wxTokenService.getRequiredUserId(request);

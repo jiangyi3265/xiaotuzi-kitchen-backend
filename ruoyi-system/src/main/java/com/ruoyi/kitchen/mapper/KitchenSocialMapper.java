@@ -22,9 +22,11 @@ public interface KitchenSocialMapper {
     int deleteEmptyGroupItem(@Param("roomId") Long roomId,@Param("dishId") Long dishId);
     int clearGroupItems(Long roomId);
     int finishGroup(@Param("id") Long id,@Param("ownerUserId") Long ownerUserId);
+    Long lockWxUser(@Param("userId") Long userId);
     Map<String,Object> selectCoupleByUser(Long userId);
     Map<String,Object> selectCoupleByUserForUpdate(Long userId);
     Map<String,Object> selectCoupleByCode(String inviteCode);
+    Map<String,Object> selectCoupleByCodeForUpdate(@Param("inviteCode") String inviteCode);
     int insertCouple(Map<String,Object> p);
     int bindCouplePartner(@Param("id") Long id,@Param("userId") Long userId);
     int unbindCouple(@Param("id") Long id,@Param("userId") Long userId);
@@ -38,8 +40,8 @@ public interface KitchenSocialMapper {
     List<Map<String,Object>> selectCoupleLeaderboard();
     List<Map<String,Object>> selectAdminGroupRooms(Map<String,Object> p);
     List<Map<String,Object>> selectAdminCoupleSpaces(Map<String,Object> p);
-    int updateGroupStatus(@Param("id") Long id,@Param("status") String status);
-    int updateCoupleStatus(@Param("id") Long id,@Param("status") String status);
+    int closeActiveGroup(@Param("id") Long id);
+    int closeActiveCouple(@Param("id") Long id);
     int insertNotification(Map<String,Object> p);
     List<Map<String,Object>> selectNotifications(Long userId);
     int countUnreadNotifications(Long userId);

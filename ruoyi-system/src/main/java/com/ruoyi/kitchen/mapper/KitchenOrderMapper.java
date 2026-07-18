@@ -22,6 +22,12 @@ public interface KitchenOrderMapper
 
     public int updateKitchenOrder(KitchenOrder kitchenOrder);
 
+    public int updateOrderStatus(@Param("id") Long id, @Param("oldStatus") String oldStatus,
+            @Param("newStatus") String newStatus);
+
+    public int updatePayStatus(@Param("id") Long id, @Param("oldStatus") String oldStatus,
+            @Param("newStatus") String newStatus);
+
     public int completeOrder(@Param("id") Long id, @Param("wxUserId") Long wxUserId);
 
     public int updateGroceryJson(@Param("id") Long id, @Param("groceryJson") String groceryJson);

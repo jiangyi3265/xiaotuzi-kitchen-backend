@@ -67,6 +67,7 @@ public class KitchenOrderController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody KitchenOrder kitchenOrder)
     {
+        kitchenOrder.setUpdateBy(getUsername());
         return toAjax(kitchenOrderService.updateKitchenOrder(kitchenOrder));
     }
 
@@ -79,6 +80,17 @@ public class KitchenOrderController extends BaseController
     public AjaxResult changeStatus(@RequestBody KitchenOrder kitchenOrder)
     {
         return toAjax(kitchenOrderService.changeOrderStatus(kitchenOrder.getId(), kitchenOrder.getOrderStatus()));
+    }
+
+    /**
+     * 线下收款确认，只变更支付状态，不改变订单流转状态。
+     */
+    @PreAuthorize("@ss.hasPermi('kitchen:order:edit')")
+    @Log(title = "订单收款状态", businessType = BusinessType.UPDATE)
+    @PutMapping("/changePayStatus")
+    public AjaxResult changePayStatus(@RequestBody KitchenOrder kitchenOrder)
+    {
+        return toAjax(kitchenOrderService.changePayStatus(kitchenOrder.getId(), kitchenOrder.getPayStatus()));
     }
 
     @PreAuthorize("@ss.hasPermi('kitchen:order:remove')")
