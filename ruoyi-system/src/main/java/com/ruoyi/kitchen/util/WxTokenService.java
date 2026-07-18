@@ -109,8 +109,16 @@ public class WxTokenService
             }
         }
         // 滑动续期（在绝对有效期窗口内）
+        Long userId = Long.valueOf(val.toString());
+        KitchenWxUser user = wxUserMapper.selectKitchenWxUserById(userId);
+        if (user == null || !"0".equals(user.getStatus()))
+        {
+            redisCache.deleteObject(PREFIX + token);
+            redisCache.deleteObject(IAT_PREFIX + token);
+            return null;
+        }
         redisCache.expire(PREFIX + token, EXPIRE_DAYS, TimeUnit.DAYS);
-        return Long.valueOf(val.toString());
+        return userId;
     }
 
     /**

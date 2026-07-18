@@ -25,6 +25,6 @@ public interface KitchenCommentMapper
     /** 统计某帖通过审核的评论数（用于回填 comment_count） */
     public int selectCountByPost(Long postId);
 
-    /** 评论数 +1 */
-    public int increaseCommentCount(Long postId);
+    /** 按实际已审核、未删除评论重算帖子评论数 */
+    public int syncCommentCount(Long postId);
 }

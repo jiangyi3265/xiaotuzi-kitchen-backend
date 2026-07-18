@@ -83,8 +83,8 @@ INSERT INTO `kitchen_wx_user` (`id`,`openid`,`nickname`,`avatar`,`user_code`,`ge
 -- ----------------------------
 DELETE FROM `kitchen_share_post` WHERE `id` IN (1,2);
 INSERT INTO `kitchen_share_post` (`id`,`wx_user_id`,`title`,`content`,`images`,`tags`,`like_count`,`comment_count`,`audit_status`,`create_by`,`create_time`) VALUES
-(1,1,'红烧肉交作业','五花肉先煸出油再上色，最后加一点冰糖，颜色就漂亮很多。','/static/minced_beans.png','红烧拿手,晚餐,下饭菜',42,8,'1','admin',NOW()),
-(2,1,'紫菜蛋花汤','十分钟搞定，清淡但很鲜，适合搭配今天的肉菜。','/static/seaweed_soup.png','营养汤,快手菜',26,5,'1','admin',NOW());
+(1,1,'红烧肉交作业','五花肉先煸出油再上色，最后加一点冰糖，颜色就漂亮很多。','/static/minced_beans.png','红烧拿手,晚餐,下饭菜',0,0,'1','admin',NOW()),
+(2,1,'紫菜蛋花汤','十分钟搞定，清淡但很鲜，适合搭配今天的肉菜。','/static/seaweed_soup.png','营养汤,快手菜',0,0,'1','admin',NOW());
 
 -- ----------------------------
 -- 配送员（同城配送）

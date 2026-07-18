@@ -160,6 +160,12 @@
         where id = #{id}
     </update>
 
+    <update id="completeOrder">
+        update kitchen_order
+        set order_status = '3', update_time = sysdate()
+        where id = #{id} and wx_user_id = #{wxUserId} and order_status = '2' and del_flag = '0'
+    </update>
+
     <update id="updateGroceryJson">
         update kitchen_order set grocery_json = #{groceryJson}, update_time = sysdate() where id = #{id} and del_flag = '0'
     </update>

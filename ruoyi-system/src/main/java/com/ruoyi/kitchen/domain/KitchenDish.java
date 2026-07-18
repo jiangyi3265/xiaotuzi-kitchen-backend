@@ -3,6 +3,7 @@ package com.ruoyi.kitchen.domain;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ruoyi.common.annotation.Excel;
@@ -51,6 +52,7 @@ public class KitchenDish extends BaseEntity
     private String recipeOpen;
 
     /** 烹饪经验 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String cookingExp;
 
     /** 准备时间(分钟) */

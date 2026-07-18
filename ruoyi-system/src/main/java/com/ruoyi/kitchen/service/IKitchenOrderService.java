@@ -37,6 +37,9 @@ public interface IKitchenOrderService
      */
     public int changeOrderStatus(Long id, String orderStatus);
 
+    /** 用户确认完成，仅制作中的本人订单可更新 */
+    public int completeOrder(Long id, Long wxUserId);
+
     /**
      * 小程序：用户申请退款
      */

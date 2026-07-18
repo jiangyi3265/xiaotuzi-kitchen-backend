@@ -71,14 +71,29 @@ public class KitchenDishServiceImpl implements IKitchenDishService
     @Transactional(rollbackFor = Exception.class)
     public int updateKitchenDish(KitchenDish kitchenDish)
     {
-        validateActiveCategory(kitchenDish.getCategoryId());
+        if (kitchenDish.getId() == null)
+        {
+            throw new ServiceException("缺少菜谱ID");
+        }
+        KitchenDish current = kitchenDishMapper.selectKitchenDishById(kitchenDish.getId());
+        if (current == null)
+        {
+            throw new ServiceException("菜谱不存在或已删除");
+        }
+        Long categoryId = kitchenDish.getCategoryId() == null ? current.getCategoryId() : kitchenDish.getCategoryId();
+        validateActiveCategory(categoryId);
+        int rows = kitchenDishMapper.updateKitchenDish(kitchenDish);
+        if (rows <= 0)
+        {
+            throw new ServiceException("菜谱更新失败");
+        }
         // 先清空子表再重建，保证编辑后一致
         Long[] ids = new Long[] { kitchenDish.getId() };
         kitchenDishMapper.deleteSpecValueByDishIds(ids);
         kitchenDishMapper.deleteSpecByDishIds(ids);
         kitchenDishMapper.deleteStepByDishIds(ids);
         saveChildren(kitchenDish);
-        return kitchenDishMapper.updateKitchenDish(kitchenDish);
+        return rows;
     }
 
     /**
@@ -188,6 +203,19 @@ public class KitchenDishServiceImpl implements IKitchenDishService
     @Override
     public int updateDishStatus(Long id, String status)
     {
+        if (!"0".equals(status) && !"1".equals(status))
+        {
+            throw new ServiceException("菜谱状态只能为0或1");
+        }
+        if ("1".equals(status))
+        {
+            KitchenDish current = kitchenDishMapper.selectKitchenDishById(id);
+            if (current == null)
+            {
+                throw new ServiceException("菜谱不存在或已删除");
+            }
+            validateActiveCategory(current.getCategoryId());
+        }
         // 走专用 SQL 只改 status 列，避免 updateKitchenDish 重建子表 / 无条件更新 virtual_price 导致误清价格
         return kitchenDishMapper.updateDishStatus(id, status);
     }

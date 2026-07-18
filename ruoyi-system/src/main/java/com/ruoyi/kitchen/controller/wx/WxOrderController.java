@@ -287,17 +287,13 @@ public class WxOrderController
             return AjaxResult.error("订单不存在");
         }
         String status = order.getOrderStatus();
-        if ("4".equals(status))
+        if (!"2".equals(status))
         {
-            return AjaxResult.error("已取消订单不能完成");
+            return AjaxResult.error("只有制作中的订单可以确认完成");
         }
-        if ("5".equals(status))
+        if (kitchenOrderService.completeOrder(id, userId) <= 0)
         {
-            return AjaxResult.error("退款中订单不能完成");
-        }
-        if (!"3".equals(status))
-        {
-            kitchenOrderService.changeOrderStatus(id, "3");
+            return AjaxResult.error("订单状态更新失败，请刷新后重试");
         }
         return AjaxResult.success(kitchenOrderService.selectKitchenOrderById(id));
     }

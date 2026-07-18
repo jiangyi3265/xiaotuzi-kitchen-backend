@@ -247,6 +247,12 @@ public class KitchenOrderServiceImpl implements IKitchenOrderService
     }
 
     @Override
+    public int completeOrder(Long id, Long wxUserId)
+    {
+        return kitchenOrderMapper.completeOrder(id, wxUserId);
+    }
+
+    @Override
     public KitchenOrder applyRefund(Long id, Long wxUserId, String reason)
     {
         KitchenOrder order = selectKitchenOrderById(id);

@@ -4,6 +4,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenDish;
 import com.ruoyi.kitchen.domain.KitchenWxUser;
@@ -48,10 +50,20 @@ public class WxRecommendController
      */
     @Anonymous
     @PostMapping
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult recommend(@RequestBody JSONObject body, HttpServletRequest request)
     {
         Long userId = wxTokenService.getRequiredUserId(request);
         String desc = body != null ? body.getString("desc") : null;
+        desc = desc == null ? "" : desc.trim();
+        if (desc.length() > 500)
+        {
+            return AjaxResult.error("推荐需求不能超过500字");
+        }
+        if (recommendCost <= 0)
+        {
+            throw new ServiceException("推荐积分配置异常");
+        }
 
         // 候选：仅在架菜品
         KitchenDish query = new KitchenDish();
@@ -72,8 +84,21 @@ public class WxRecommendController
         KitchenDish best = pickBest(candidates, desc);
         // 返回完整详情（含规格、步骤）
         KitchenDish detail = kitchenDishService.selectKitchenDishById(best.getId());
+        if (detail == null || !"1".equals(detail.getStatus()))
+        {
+            throw new ServiceException("推荐菜谱已失效，请重试");
+        }
+        if (!"1".equals(detail.getRecipeOpen()))
+        {
+            detail.setSteps(null);
+            detail.setCookingExp(null);
+        }
 
         KitchenWxUser user = wxUserMapper.selectKitchenWxUserById(userId);
+        if (user == null)
+        {
+            throw new ServiceException("用户状态异常，本次推荐已取消");
+        }
         AjaxResult ajax = AjaxResult.success(detail);
         ajax.put("carrot", user != null ? user.getCarrot() : 0);
         ajax.put("cost", recommendCost);

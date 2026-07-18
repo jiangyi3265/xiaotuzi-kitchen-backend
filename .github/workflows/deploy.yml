@@ -239,7 +239,8 @@ jobs:
             RuoYi-Vue/sql/kitchen_patch_20260713_couple_cart.sql \
             RuoYi-Vue/sql/kitchen_patch_20260715_grocery_specs.sql \
             RuoYi-Vue/sql/kitchen_patch_20260715_feature_switch.sql \
-            RuoYi-Vue/sql/kitchen_patch_20260717_profile_qr.sql
+            RuoYi-Vue/sql/kitchen_patch_20260717_profile_qr.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260718_business_integrity.sql
           do
             if [ -f "$sql" ]; then
               docker exec -i xiaotuzi-mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" ha' < "$sql"
@@ -279,6 +280,10 @@ jobs:
           test "$FEATURE_MENU_COUNT" = "1"
           FEATURE_MENU_PARENT_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from sys_menu child where child.component=\"applet/switch/index\" and child.parent_id=(select sibling.parent_id from sys_menu sibling where sibling.component=\"kitchen/shop/index\" order by sibling.menu_id limit 1)" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$FEATURE_MENU_PARENT_COUNT" = "1"
+          DISH_CATEGORY_ANOMALY_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from kitchen_dish d left join kitchen_category c on c.id=d.category_id left join kitchen_category p on p.id=c.parent_id left join kitchen_category gp on gp.id=p.parent_id where d.del_flag=\"0\" and d.status=\"1\" and (c.id is null or c.del_flag<>\"0\" or c.status<>\"0\" or (coalesce(c.parent_id,0)<>0 and (p.id is null or p.del_flag<>\"0\" or p.status<>\"0\")) or (coalesce(p.parent_id,0)<>0 and (gp.id is null or gp.del_flag<>\"0\" or gp.status<>\"0\")) or coalesce(gp.parent_id,0)<>0 or c.cat_level<>case when coalesce(c.parent_id,0)=0 then 1 when coalesce(p.parent_id,0)=0 then 2 when coalesce(gp.parent_id,0)=0 then 3 else 0 end or not (c.ancestors <=> case when coalesce(c.parent_id,0)=0 then \"0\" when coalesce(p.parent_id,0)=0 then concat(\"0,\",p.id) when coalesce(gp.parent_id,0)=0 then concat(\"0,\",gp.id,\",\",p.id) else null end))" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
+          test "$DISH_CATEGORY_ANOMALY_COUNT" = "0"
+          SHARE_COUNT_DRIFT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from kitchen_share_post p where coalesce(p.like_count,0)<>(select count(*) from kitchen_post_like l where l.post_id=p.id) or coalesce(p.comment_count,0)<>(select count(*) from kitchen_comment c where c.post_id=p.id and c.audit_status=\"1\" and c.del_flag=\"0\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
+          test "$SHARE_COUNT_DRIFT" = "0"
           curl -fsS http://127.0.0.1:18081/api/wx/common/features | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['code']==200 and isinstance(d.get('enabled'), bool)"
           curl -fsS 'http://127.0.0.1:18081/api/wx/region/status?province=test&city=test&district=test' | grep -q '"code":200'
           curl -fsS 'http://127.0.0.1:18081/api/wx/region/opened' | grep -q '"code":200'

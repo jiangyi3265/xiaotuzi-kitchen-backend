@@ -78,8 +78,14 @@
         where id = #{id}
     </update>
 
-    <update id="increaseCommentCount" parameterType="Long">
-        update kitchen_share_post set comment_count = comment_count + 1 where id = #{postId}
+    <update id="syncCommentCount" parameterType="Long">
+        update kitchen_share_post
+        set comment_count = (
+            select count(1)
+            from kitchen_comment c
+            where c.post_id = #{postId} and c.audit_status = '1' and c.del_flag = '0'
+        )
+        where id = #{postId}
     </update>
 
     <update id="deleteKitchenCommentById" parameterType="Long">

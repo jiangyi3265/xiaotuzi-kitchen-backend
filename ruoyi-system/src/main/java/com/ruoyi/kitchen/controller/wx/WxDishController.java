@@ -46,7 +46,12 @@ public class WxDishController
     public TableDataInfo list(KitchenDish kitchenDish)
     {
         kitchenDish.setStatus("1"); // 强制只查上架，防止越权看到下架菜品
-        return page(kitchenDish);
+        TableDataInfo result = page(kitchenDish);
+        for (Object row : result.getRows())
+        {
+            ((KitchenDish) row).setCookingExp(null);
+        }
+        return result;
     }
 
     /**

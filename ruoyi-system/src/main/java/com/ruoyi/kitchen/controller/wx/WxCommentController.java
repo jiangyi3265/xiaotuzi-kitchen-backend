@@ -14,7 +14,9 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.kitchen.domain.KitchenComment;
+import com.ruoyi.kitchen.domain.KitchenSharePost;
 import com.ruoyi.kitchen.service.IKitchenCommentService;
+import com.ruoyi.kitchen.service.IKitchenSharePostService;
 import com.ruoyi.kitchen.util.WxContentFilter;
 import com.ruoyi.kitchen.util.WxPageUtils;
 import com.ruoyi.kitchen.util.WxTokenService;
@@ -30,6 +32,9 @@ public class WxCommentController
 {
     @Autowired
     private IKitchenCommentService commentService;
+
+    @Autowired
+    private IKitchenSharePostService sharePostService;
 
     @Autowired
     private WxTokenService wxTokenService;
@@ -63,14 +68,25 @@ public class WxCommentController
         {
             return AjaxResult.error("缺少动态ID");
         }
-        if (StringUtils.isBlank(comment.getContent()))
+        String content = comment.getContent() == null ? null : comment.getContent().trim();
+        if (StringUtils.isBlank(content))
         {
             return AjaxResult.error("请填写评论内容");
         }
-        if (WxContentFilter.containsBlockedContent(comment.getContent()))
+        if (content.length() > 500)
+        {
+            return AjaxResult.error("评论内容不能超过500字");
+        }
+        KitchenSharePost post = sharePostService.selectKitchenSharePostById(comment.getPostId());
+        if (post == null || !"1".equals(post.getAuditStatus()))
+        {
+            return AjaxResult.error("动态不存在或尚未公开");
+        }
+        if (WxContentFilter.containsBlockedContent(content))
         {
             return AjaxResult.error("评论包含不适宜信息，请修改后再发送");
         }
+        comment.setContent(content);
         comment.setWxUserId(userId);
         comment.setAuditStatus("1".equals(shareAudit) ? "0" : "1");
         commentService.addComment(comment);

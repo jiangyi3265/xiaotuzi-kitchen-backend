@@ -23,7 +23,11 @@
 
     <sql id="selectKitchenSharePostVo">
         select p.id, p.wx_user_id, u.nickname as user_nickname, u.avatar as user_avatar,
-               p.title, p.content, p.images, p.tags, p.like_count, p.comment_count, p.audit_status,
+               p.title, p.content, p.images, p.tags,
+               (select count(1) from kitchen_post_like l where l.post_id = p.id) as like_count,
+               (select count(1) from kitchen_comment c
+                where c.post_id = p.id and c.audit_status = '1' and c.del_flag = '0') as comment_count,
+               p.audit_status,
                p.create_by, p.create_time, p.update_by, p.update_time, p.remark
         from kitchen_share_post p
         left join kitchen_wx_user u on u.id = p.wx_user_id
