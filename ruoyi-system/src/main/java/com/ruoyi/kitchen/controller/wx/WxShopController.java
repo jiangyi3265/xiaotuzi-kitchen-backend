@@ -1,6 +1,7 @@
 package com.ruoyi.kitchen.controller.wx;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,8 +35,12 @@ public class WxShopController
      */
     @Anonymous
     @GetMapping("/info")
-    public AjaxResult info()
+    public AjaxResult info(HttpServletResponse response)
     {
+        // 厨房头像和背景会在后台随时修改，禁止微信端或中间代理复用旧配置。
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0L);
         return AjaxResult.success(kitchenShopService.getShop());
     }
 
