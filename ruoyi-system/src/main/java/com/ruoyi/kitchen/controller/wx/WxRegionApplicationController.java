@@ -1,8 +1,11 @@
 package com.ruoyi.kitchen.controller.wx;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +25,25 @@ public class WxRegionApplicationController {
     @Autowired private KitchenRegionApplicationMapper mapper;
     @Autowired private KitchenWxUserMapper wxUserMapper;
     @Autowired private WxTokenService tokenService;
-    @Anonymous @GetMapping("/opened") public AjaxResult opened() { return AjaxResult.success(mapper.selectEnabledRegions()); }
-    @Anonymous @GetMapping("/status") public AjaxResult status(KitchenRegionApplication q, HttpServletRequest request) {
-        boolean opened=StringUtils.isNotBlank(q.getProvince())&&StringUtils.isNotBlank(q.getCity())&&StringUtils.isNotBlank(q.getDistrict())&&mapper.countEnabledRegion(q)>0;
+    @Anonymous @GetMapping("/opened") public AjaxResult opened(HttpServletResponse response) {
+        disableCache(response);
+        return AjaxResult.success(mapper.selectEnabledRegions());
+    }
+    @Anonymous @GetMapping("/status") public AjaxResult status(KitchenRegionApplication q, HttpServletRequest request, HttpServletResponse response) {
+        disableCache(response);
+        List<KitchenRegionApplication> enabledRegions=mapper.selectEnabledRegions();
+        KitchenRegionApplication matched=findEnabledRegion(enabledRegions,q);
+        KitchenRegionApplication resolvedRegion=matched;
         Long uid=tokenService.getUserId(request); KitchenRegionApplication latest=uid==null?null:mapper.selectLatestByUser(uid);
-        Map<String,Object> data=new HashMap<>(); data.put("opened",opened); data.put("application",latest); return AjaxResult.success(data);
+        if(matched==null&&!hasCompleteRegion(q)&&latest!=null&&"1".equals(latest.getAuditStatus())&&"1".equals(latest.getEnabled())) {
+            matched=findEnabledRegion(enabledRegions,latest);
+            if(matched!=null) resolvedRegion=latest;
+        }
+        Map<String,Object> data=new HashMap<>();
+        data.put("opened",matched!=null);
+        data.put("application",latest);
+        data.put("region",resolvedRegion==null?null:regionData(resolvedRegion));
+        return AjaxResult.success(data);
     }
     @Anonymous @PostMapping("/apply") @WxFeatureRequired @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class) public AjaxResult apply(@RequestBody KitchenRegionApplication a, HttpServletRequest request) {
         Long uid=tokenService.getRequiredUserId(request);
@@ -46,4 +63,35 @@ public class WxRegionApplicationController {
     }
     private String trim(String value) { return value==null?null:value.trim(); }
     private boolean tooLong(String value,int max) { return value!=null&&value.length()>max; }
+    private boolean hasCompleteRegion(KitchenRegionApplication region) {
+        return region!=null&&StringUtils.isNotBlank(region.getProvince())&&StringUtils.isNotBlank(region.getCity())&&StringUtils.isNotBlank(region.getDistrict());
+    }
+    private KitchenRegionApplication findEnabledRegion(List<KitchenRegionApplication> regions,KitchenRegionApplication query) {
+        if(!hasCompleteRegion(query)||regions==null) return null;
+        for(KitchenRegionApplication region:regions) {
+            if(sameRegionPart(region.getProvince(),query.getProvince())
+                    &&sameRegionPart(region.getCity(),query.getCity())
+                    &&sameRegionPart(region.getDistrict(),query.getDistrict())) return region;
+        }
+        return null;
+    }
+    private boolean sameRegionPart(String left,String right) { return canonicalRegionPart(left).equals(canonicalRegionPart(right)); }
+    private String canonicalRegionPart(String value) {
+        String normalized=StringUtils.defaultString(value).trim().replaceAll("\\s+","").toLowerCase(Locale.ROOT);
+        String[] suffixes={"维吾尔自治区","壮族自治区","回族自治区","特别行政区","自治区","自治州","地区","省","市","区","县","盟"};
+        for(String suffix:suffixes) {
+            if(normalized.endsWith(suffix)&&normalized.length()>suffix.length()) return normalized.substring(0,normalized.length()-suffix.length());
+        }
+        return normalized;
+    }
+    private Map<String,String> regionData(KitchenRegionApplication region) {
+        Map<String,String> data=new HashMap<>();
+        data.put("province",region.getProvince()); data.put("city",region.getCity()); data.put("district",region.getDistrict()); data.put("address",region.getAddress());
+        return data;
+    }
+    private void disableCache(HttpServletResponse response) {
+        response.setHeader("Cache-Control","no-store, no-cache, must-revalidate, max-age=0");
+        response.setHeader("Pragma","no-cache");
+        response.setDateHeader("Expires",0L);
+    }
 }
