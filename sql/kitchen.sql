@@ -73,6 +73,7 @@ CREATE TABLE `kitchen_category` (
   `ancestors`   varchar(255) DEFAULT ''                    COMMENT '祖级列表',
   `cat_name`    varchar(64)  NOT NULL                      COMMENT '分类名称',
   `image`       varchar(255) DEFAULT ''                    COMMENT '分类图片',
+  `display_area` varchar(32) DEFAULT '私房菜'              COMMENT '小程序顶部展示栏目',
   `cat_level`   int(2)       DEFAULT 1                     COMMENT '层级(1/2/3)',
   `order_num`   int(4)       DEFAULT 0                     COMMENT '显示顺序',
   `status`      char(1)      DEFAULT '0'                   COMMENT '状态(0正常 1停用)',

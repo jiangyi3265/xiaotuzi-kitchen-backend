@@ -49,4 +49,7 @@ public interface KitchenCategoryMapper
      * 统计分类下未删除的菜品数量
      */
     public int selectDishCountByCategoryId(Long categoryId);
+
+    /** 统计“其他”区域引用该分类的菜品数量 */
+    public int selectOtherDishCountByCategoryId(Long categoryId);
 }

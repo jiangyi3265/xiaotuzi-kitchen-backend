@@ -33,6 +33,10 @@ public class KitchenCategory extends BaseEntity
     /** 分类图片 */
     private String image;
 
+    /** 小程序顶部展示栏目（例如：私房菜、其他、同城） */
+    @Excel(name = "展示栏目")
+    private String displayArea;
+
     /** 层级(1/2/3) */
     @Excel(name = "层级")
     private Integer catLevel;
@@ -63,6 +67,9 @@ public class KitchenCategory extends BaseEntity
     public void setImage(String image) { this.image = image; }
     public String getImage() { return image; }
 
+    public void setDisplayArea(String displayArea) { this.displayArea = displayArea; }
+    public String getDisplayArea() { return displayArea; }
+
     public void setCatLevel(Integer catLevel) { this.catLevel = catLevel; }
     public Integer getCatLevel() { return catLevel; }
 
@@ -83,6 +90,7 @@ public class KitchenCategory extends BaseEntity
                 .append("ancestors", getAncestors())
                 .append("catName", getCatName())
                 .append("image", getImage())
+                .append("displayArea", getDisplayArea())
                 .append("catLevel", getCatLevel())
                 .append("orderNum", getOrderNum())
                 .append("status", getStatus())

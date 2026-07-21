@@ -79,6 +79,7 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
         kitchenCategory.setParentId(parentId);
         kitchenCategory.setAncestors(buildAncestors(parentPath));
         kitchenCategory.setCatLevel(parentPath.size() + 1);
+        kitchenCategory.setDisplayArea(resolveDisplayArea(kitchenCategory.getDisplayArea(), null, parentPath));
         if (kitchenCategory.getCatLevel() > 3)
         {
             throw new ServiceException("分类最多支持三级");
@@ -154,6 +155,30 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
         return ancestors.toString();
     }
 
+    private String resolveDisplayArea(String requested, KitchenCategory current, List<KitchenCategory> parentPath)
+    {
+        if (!parentPath.isEmpty())
+        {
+            String inherited = parentPath.get(parentPath.size() - 1).getDisplayArea();
+            return inherited == null || inherited.trim().isEmpty() ? "私房菜" : inherited.trim();
+        }
+        String displayArea = requested;
+        if (displayArea == null && current != null)
+        {
+            displayArea = current.getDisplayArea();
+        }
+        displayArea = displayArea == null ? "私房菜" : displayArea.trim();
+        if (displayArea.isEmpty())
+        {
+            throw new ServiceException("展示栏目不能为空");
+        }
+        if (displayArea.length() > 32)
+        {
+            throw new ServiceException("展示栏目不能超过32个字符");
+        }
+        return displayArea;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateKitchenCategory(KitchenCategory kitchenCategory)
@@ -191,6 +216,13 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
         List<KitchenCategory> parentPath = resolveParentPath(parentId, kitchenCategory.getId(), parentChanged || enabling);
         String ancestors = buildAncestors(parentPath);
         int catLevel = parentPath.size() + 1;
+        String displayArea = resolveDisplayArea(kitchenCategory.getDisplayArea(), current, parentPath);
+
+        if (kitchenCategoryMapper.selectOtherDishCountByCategoryId(current.getId()) > 0
+                && (parentId != 0L || "私房菜".equals(displayArea)))
+        {
+            throw new ServiceException("仍有菜品附加展示在该分类，不能移为子分类或私房菜栏目");
+        }
 
         if (catLevel > 3)
         {
@@ -198,7 +230,8 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
         }
         if (!"1".equals(current.getStatus()) && "1".equals(kitchenCategory.getStatus())
                 && (kitchenCategoryMapper.selectChildrenCountByParentId(kitchenCategory.getId()) > 0
-                    || kitchenCategoryMapper.selectDishCountByCategoryId(kitchenCategory.getId()) > 0))
+                    || kitchenCategoryMapper.selectDishCountByCategoryId(kitchenCategory.getId()) > 0
+                    || kitchenCategoryMapper.selectOtherDishCountByCategoryId(kitchenCategory.getId()) > 0))
         {
             throw new ServiceException("分类下存在子分类或菜谱，不允许停用");
         }
@@ -206,6 +239,7 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
         current.setParentId(parentId);
         current.setAncestors(ancestors);
         current.setCatLevel(catLevel);
+        current.setDisplayArea(displayArea);
         Deque<KitchenCategory> queue = new ArrayDeque<>();
         Set<Long> subtree = new HashSet<>();
         List<KitchenCategory> descendants = new ArrayList<>();
@@ -227,6 +261,7 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
                 }
                 child.setAncestors(parent.getAncestors() + "," + parent.getId());
                 child.setCatLevel(childLevel);
+                child.setDisplayArea(parent.getDisplayArea());
                 descendants.add(child);
                 queue.addLast(child);
             }
@@ -235,6 +270,7 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
         kitchenCategory.setParentId(parentId);
         kitchenCategory.setAncestors(ancestors);
         kitchenCategory.setCatLevel(catLevel);
+        kitchenCategory.setDisplayArea(displayArea);
         int rows = kitchenCategoryMapper.updateKitchenCategory(kitchenCategory);
         if (rows <= 0)
         {
@@ -246,6 +282,7 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
             update.setId(descendant.getId());
             update.setAncestors(descendant.getAncestors());
             update.setCatLevel(descendant.getCatLevel());
+            update.setDisplayArea(descendant.getDisplayArea());
             update.setUpdateBy(kitchenCategory.getUpdateBy());
             if (kitchenCategoryMapper.updateKitchenCategory(update) <= 0)
             {
@@ -268,6 +305,10 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
             {
                 throw new ServiceException("分类下存在菜谱，请先迁移或删除菜谱");
             }
+            if (kitchenCategoryMapper.selectOtherDishCountByCategoryId(id) > 0)
+            {
+                throw new ServiceException("仍有菜品使用该其他分类，请先取消关联");
+            }
         }
         return kitchenCategoryMapper.deleteKitchenCategoryByIds(ids);
     }
@@ -282,6 +323,10 @@ public class KitchenCategoryServiceImpl implements IKitchenCategoryService
         if (kitchenCategoryMapper.selectDishCountByCategoryId(id) > 0)
         {
             throw new ServiceException("分类下存在菜谱，请先迁移或删除菜谱");
+        }
+        if (kitchenCategoryMapper.selectOtherDishCountByCategoryId(id) > 0)
+        {
+            throw new ServiceException("仍有菜品使用该其他分类，请先取消关联");
         }
         return kitchenCategoryMapper.deleteKitchenCategoryById(id);
     }

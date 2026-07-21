@@ -79,8 +79,8 @@ public class KitchenDish extends BaseEntity
     @Excel(name = "状态", readConverterExp = "0=下架,1=上架")
     private String status;
 
-    /** 今日安排类型（空=不展示 hotpot=火锅类 barbecue=烧烤） */
-    @Excel(name = "今日安排", readConverterExp = "hotpot=火锅类,barbecue=烧烤")
+    /** “其他”区域分类ID（空=不在“其他”区域展示） */
+    @Excel(name = "其他分类ID")
     private String todayType;
 
     /** 规格组列表（非DB字段） */

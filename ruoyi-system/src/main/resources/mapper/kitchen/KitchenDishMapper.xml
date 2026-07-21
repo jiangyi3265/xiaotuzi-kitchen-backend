@@ -159,7 +159,7 @@
             <if test="portions != null">portions = #{portions},</if>
             <if test="orderNum != null">order_num = #{orderNum},</if>
             <if test="status != null">status = #{status},</if>
-            <if test="todayType != null">today_type = #{todayType},</if>
+            today_type = #{todayType},
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = sysdate()

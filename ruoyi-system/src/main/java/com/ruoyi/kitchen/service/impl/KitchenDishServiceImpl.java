@@ -62,6 +62,7 @@ public class KitchenDishServiceImpl implements IKitchenDishService
     public int insertKitchenDish(KitchenDish kitchenDish)
     {
         validateActiveCategory(kitchenDish.getCategoryId());
+        validateOtherCategory(kitchenDish.getTodayType());
         int rows = kitchenDishMapper.insertKitchenDish(kitchenDish);
         saveChildren(kitchenDish);
         return rows;
@@ -82,6 +83,7 @@ public class KitchenDishServiceImpl implements IKitchenDishService
         }
         Long categoryId = kitchenDish.getCategoryId() == null ? current.getCategoryId() : kitchenDish.getCategoryId();
         validateActiveCategory(categoryId);
+        validateOtherCategory(kitchenDish.getTodayType());
         int rows = kitchenDishMapper.updateKitchenDish(kitchenDish);
         if (rows <= 0)
         {
@@ -124,6 +126,32 @@ public class KitchenDishServiceImpl implements IKitchenDishService
                 throw new ServiceException("所属分类已停用，请重新选择");
             }
             currentId = category.getParentId();
+        }
+    }
+
+    private void validateOtherCategory(String categoryId)
+    {
+        if (StringUtils.isBlank(categoryId))
+        {
+            return;
+        }
+        final Long id;
+        try
+        {
+            id = Long.valueOf(categoryId);
+        }
+        catch (NumberFormatException e)
+        {
+            throw new ServiceException("其他分类无效，请重新选择");
+        }
+        KitchenCategory category = kitchenCategoryMapper.selectKitchenCategoryById(id);
+        if (category == null || !"0".equals(category.getStatus())
+                || category.getDisplayArea() == null
+                || "私房菜".equals(category.getDisplayArea())
+                || "0".equals(category.getDisplayArea())
+                || (category.getParentId() != null && category.getParentId() != 0L))
+        {
+            throw new ServiceException("其他分类不存在或已停用，请重新选择");
         }
     }
 

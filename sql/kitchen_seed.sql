@@ -13,15 +13,17 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 -- 分类（两级：一级 -> 二级；菜品挂在二级）
 -- ----------------------------
-DELETE FROM `kitchen_category` WHERE `id` IN (1,2,3,11,12,21,31);
-INSERT INTO `kitchen_category` (`id`,`parent_id`,`ancestors`,`cat_name`,`image`,`cat_level`,`order_num`,`status`,`create_by`,`create_time`) VALUES
-(1, 0, '0',    '家常菜', '/static/onion_chicken.png', 1, 1, '0', 'admin', NOW()),
-(2, 0, '0',    '营养汤', '/static/seaweed_soup.png',  1, 2, '0', 'admin', NOW()),
-(3, 0, '0',    '主食',   '/static/egg_pancake.png',   1, 3, '0', 'admin', NOW()),
-(11,1, '0,1',  '猪肉类', '/static/minced_beans.png',  2, 1, '0', 'admin', NOW()),
-(12,1, '0,1',  '素菜',   '/static/sweet_corn.png',    2, 2, '0', 'admin', NOW()),
-(21,2, '0,2',  '家常汤', '/static/seaweed_soup.png',  2, 1, '0', 'admin', NOW()),
-(31,3, '0,3',  '面饭',   '/static/pineapple_rice.png',2, 1, '0', 'admin', NOW());
+DELETE FROM `kitchen_category` WHERE `id` IN (1,2,3,4,5,11,12,21,31);
+INSERT INTO `kitchen_category` (`id`,`parent_id`,`ancestors`,`cat_name`,`image`,`display_area`,`cat_level`,`order_num`,`status`,`create_by`,`create_time`) VALUES
+(1, 0, '0',    '家常菜', '/static/onion_chicken.png', '私房菜', 1, 1, '0', 'admin', NOW()),
+(2, 0, '0',    '营养汤', '/static/seaweed_soup.png',  '私房菜', 1, 2, '0', 'admin', NOW()),
+(3, 0, '0',    '主食',   '/static/egg_pancake.png',   '私房菜', 1, 3, '0', 'admin', NOW()),
+(4, 0, '0',    '火锅类', '',                         '其他',   1, 1, '0', 'admin', NOW()),
+(5, 0, '0',    '烧烤',   '',                         '其他',   1, 2, '0', 'admin', NOW()),
+(11,1, '0,1',  '猪肉类', '/static/minced_beans.png',  '私房菜', 2, 1, '0', 'admin', NOW()),
+(12,1, '0,1',  '素菜',   '/static/sweet_corn.png',    '私房菜', 2, 2, '0', 'admin', NOW()),
+(21,2, '0,2',  '家常汤', '/static/seaweed_soup.png',  '私房菜', 2, 1, '0', 'admin', NOW()),
+(31,3, '0,3',  '面饭',   '/static/pineapple_rice.png','私房菜', 2, 1, '0', 'admin', NOW());
 
 -- ----------------------------
 -- 菜品

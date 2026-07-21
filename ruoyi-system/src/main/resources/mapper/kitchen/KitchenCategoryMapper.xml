@@ -8,6 +8,7 @@
         <result property="ancestors"  column="ancestors"   />
         <result property="catName"    column="cat_name"    />
         <result property="image"      column="image"       />
+        <result property="displayArea" column="display_area" />
         <result property="catLevel"   column="cat_level"   />
         <result property="orderNum"   column="order_num"   />
         <result property="status"     column="status"      />
@@ -19,7 +20,7 @@
     </resultMap>
 
     <sql id="selectKitchenCategoryVo">
-        select id, parent_id, ancestors, cat_name, image, cat_level, order_num, status,
+        select id, parent_id, ancestors, cat_name, image, display_area, cat_level, order_num, status,
                create_by, create_time, update_by, update_time, remark
         from kitchen_category
     </sql>
@@ -31,6 +32,7 @@
             <if test="parentId != null">                       AND parent_id = #{parentId}</if>
             <if test="catName != null and catName != ''">      AND cat_name like concat('%', #{catName}, '%')</if>
             <if test="catLevel != null">                       AND cat_level = #{catLevel}</if>
+            <if test="displayArea != null and displayArea != ''"> AND display_area = #{displayArea}</if>
             <if test="status != null and status != ''">        AND status = #{status}</if>
         </where>
         order by parent_id, order_num
@@ -49,6 +51,10 @@
         select count(1) from kitchen_dish where category_id = #{categoryId} and del_flag = '0'
     </select>
 
+    <select id="selectOtherDishCountByCategoryId" parameterType="Long" resultType="int">
+        select count(1) from kitchen_dish where today_type = cast(#{categoryId} as char) and del_flag = '0'
+    </select>
+
     <insert id="insertKitchenCategory" parameterType="KitchenCategory" useGeneratedKeys="true" keyProperty="id">
         insert into kitchen_category
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -56,6 +62,7 @@
             <if test="ancestors != null">ancestors,</if>
             <if test="catName != null and catName != ''">cat_name,</if>
             <if test="image != null">image,</if>
+            <if test="displayArea != null">display_area,</if>
             <if test="catLevel != null">cat_level,</if>
             <if test="orderNum != null">order_num,</if>
             <if test="status != null">status,</if>
@@ -68,6 +75,7 @@
             <if test="ancestors != null">#{ancestors},</if>
             <if test="catName != null and catName != ''">#{catName},</if>
             <if test="image != null">#{image},</if>
+            <if test="displayArea != null">#{displayArea},</if>
             <if test="catLevel != null">#{catLevel},</if>
             <if test="orderNum != null">#{orderNum},</if>
             <if test="status != null">#{status},</if>
@@ -84,6 +92,7 @@
             <if test="ancestors != null">ancestors = #{ancestors},</if>
             <if test="catName != null and catName != ''">cat_name = #{catName},</if>
             <if test="image != null">image = #{image},</if>
+            <if test="displayArea != null">display_area = #{displayArea},</if>
             <if test="catLevel != null">cat_level = #{catLevel},</if>
             <if test="orderNum != null">order_num = #{orderNum},</if>
             <if test="status != null">status = #{status},</if>
