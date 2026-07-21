@@ -2,6 +2,7 @@ package com.ruoyi.kitchen.controller.wx;
 
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,8 +44,9 @@ public class WxDishController
      */
     @Anonymous
     @GetMapping("/list")
-    public TableDataInfo list(KitchenDish kitchenDish)
+    public TableDataInfo list(KitchenDish kitchenDish, HttpServletResponse response)
     {
+        disableCache(response);
         kitchenDish.setStatus("1"); // 强制只查上架，防止越权看到下架菜品
         TableDataInfo result = page(kitchenDish);
         for (Object row : result.getRows())
@@ -88,8 +90,9 @@ public class WxDishController
      */
     @Anonymous
     @GetMapping("/detail/{id}")
-    public AjaxResult detail(@PathVariable("id") Long id)
+    public AjaxResult detail(@PathVariable("id") Long id, HttpServletResponse response)
     {
+        disableCache(response);
         KitchenDish dish = kitchenDishService.selectKitchenDishById(id);
         if (dish == null || !"1".equals(dish.getStatus()))
         {
@@ -172,5 +175,12 @@ public class WxDishController
     private AjaxResult toAjax(int rows)
     {
         return rows > 0 ? AjaxResult.success() : AjaxResult.error();
+    }
+
+    private void disableCache(HttpServletResponse response)
+    {
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0L);
     }
 }

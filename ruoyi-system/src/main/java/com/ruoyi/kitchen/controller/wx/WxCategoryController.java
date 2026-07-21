@@ -1,6 +1,7 @@
 package com.ruoyi.kitchen.controller.wx;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,8 +41,9 @@ public class WxCategoryController
      */
     @Anonymous
     @GetMapping("/tree")
-    public AjaxResult tree()
+    public AjaxResult tree(HttpServletResponse response)
     {
+        disableCache(response);
         KitchenCategory query = new KitchenCategory();
         query.setStatus("0");
         return AjaxResult.success(kitchenCategoryService.buildCategoryTree(query));
@@ -110,5 +112,12 @@ public class WxCategoryController
     private AjaxResult toAjax(int rows)
     {
         return rows > 0 ? AjaxResult.success() : AjaxResult.error();
+    }
+
+    private void disableCache(HttpServletResponse response)
+    {
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0L);
     }
 }
