@@ -40,8 +40,8 @@ public class WxCommentController
     @Autowired
     private WxTokenService wxTokenService;
 
-    /** 评论是否需要审核：1 需要(默认待审核) 0 不需要(直接通过) */
-    @Value("${wx.shareAudit:1}")
+    /** 评论是否需要审核：1 需要(待审核) 0 不需要(默认直接通过) */
+    @Value("${wx.shareAudit:0}")
     private String shareAudit;
 
     /**

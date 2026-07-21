@@ -48,7 +48,7 @@ public class KitchenOrderServiceImpl implements IKitchenOrderService
     private KitchenSharePostMapper kitchenSharePostMapper;
 
     /** 发布是否需要审核：1待审核，0直接通过。 */
-    @Value("${wx.shareAudit:1}")
+    @Value("${wx.shareAudit:0}")
     private String shareAudit;
 
     @Override

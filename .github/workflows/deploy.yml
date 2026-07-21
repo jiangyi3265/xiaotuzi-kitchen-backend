@@ -240,7 +240,8 @@ jobs:
             RuoYi-Vue/sql/kitchen_patch_20260715_grocery_specs.sql \
             RuoYi-Vue/sql/kitchen_patch_20260715_feature_switch.sql \
             RuoYi-Vue/sql/kitchen_patch_20260717_profile_qr.sql \
-            RuoYi-Vue/sql/kitchen_patch_20260718_business_integrity.sql
+            RuoYi-Vue/sql/kitchen_patch_20260718_business_integrity.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260721_share_auto_publish.sql
           do
             if [ -f "$sql" ]; then
               docker exec -i xiaotuzi-mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" ha' < "$sql"

@@ -29,8 +29,8 @@ swagger:
 # 微信小程序：生产强制关闭开发模式（禁止 code 即 openid 的伪登录）
 wx:
   devMode: ${WX_DEV_MODE:false}
-  # 用户发布的成品与评论默认先进入后台审核，审核通过后才公开展示。
-  shareAudit: ${WX_SHARE_AUDIT:1}
+  # 用户发布的动态、订单分享与评论默认直接公开；仍保留敏感内容过滤。
+  shareAudit: ${WX_SHARE_AUDIT:0}
 
 # 上传目录（Linux）
 ruoyi:
