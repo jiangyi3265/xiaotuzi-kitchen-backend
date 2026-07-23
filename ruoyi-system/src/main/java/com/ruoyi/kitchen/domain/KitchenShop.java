@@ -1,5 +1,6 @@
 package com.ruoyi.kitchen.domain;
 
+import java.util.List;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
@@ -61,6 +62,9 @@ public class KitchenShop extends BaseEntity
 
     /** 商家提前备货群说明 */
     private String stockGroupNotice;
+
+    /** 多个菜市场及各自备货群 */
+    private List<KitchenMarket> markets;
 
     /** 公告开关(0关 1开) */
     private String announceEnabled;
@@ -127,4 +131,6 @@ public class KitchenShop extends BaseEntity
     public void setStockGroupName(String stockGroupName) { this.stockGroupName = stockGroupName; }
     public String getStockGroupNotice() { return stockGroupNotice; }
     public void setStockGroupNotice(String stockGroupNotice) { this.stockGroupNotice = stockGroupNotice; }
+    public List<KitchenMarket> getMarkets() { return markets; }
+    public void setMarkets(List<KitchenMarket> markets) { this.markets = markets; }
 }

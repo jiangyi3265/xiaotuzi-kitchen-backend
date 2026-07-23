@@ -41,7 +41,7 @@ public class WxShopController
         response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0L);
-        return AjaxResult.success(kitchenShopService.getShop());
+        return AjaxResult.success(kitchenShopService.getPublicShop());
     }
 
     /**

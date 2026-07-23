@@ -51,6 +51,9 @@ CREATE TABLE `kitchen_shop` (
   `store_address`  varchar(255) DEFAULT ''                 COMMENT '门店地址',
   `business_hours` varchar(64)  DEFAULT ''                 COMMENT '营业时间',
   `store_phone`    varchar(20)  DEFAULT ''                 COMMENT '门店电话',
+  `stock_group_qr` varchar(255) DEFAULT ''                 COMMENT '商家提前备货群二维码',
+  `stock_group_name` varchar(100) DEFAULT ''               COMMENT '商家提前备货群名称',
+  `stock_group_notice` varchar(500) DEFAULT ''             COMMENT '商家提前备货群说明',
   `announce_enabled` char(1)    DEFAULT '1'                COMMENT '公告开关(0关 1开)',
   `announce_title`   varchar(64)  DEFAULT ''               COMMENT '公告标题',
   `announce_content` varchar(1000) DEFAULT ''              COMMENT '公告内容',
@@ -64,7 +67,31 @@ CREATE TABLE `kitchen_shop` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='厨房店铺设置表';
 
 -- ----------------------------
--- 3、菜品分类表（三级树）
+-- 3、菜市场及备货群配置表
+-- ----------------------------
+DROP TABLE IF EXISTS `kitchen_market`;
+CREATE TABLE `kitchen_market` (
+  `id`                 bigint(20)    NOT NULL AUTO_INCREMENT COMMENT '菜市场ID',
+  `shop_id`            bigint(20)    NOT NULL                COMMENT '厨房ID',
+  `market_name`        varchar(100)  NOT NULL                COMMENT '菜市场名称',
+  `market_address`     varchar(255)  NOT NULL                COMMENT '菜市场地址',
+  `business_hours`     varchar(100)  DEFAULT ''              COMMENT '营业时间',
+  `phone`              varchar(30)   DEFAULT ''              COMMENT '联系电话',
+  `latitude`           decimal(10,7) DEFAULT NULL            COMMENT '纬度(GCJ-02)',
+  `longitude`          decimal(10,7) DEFAULT NULL            COMMENT '经度(GCJ-02)',
+  `stock_group_qr`     varchar(255)  DEFAULT ''              COMMENT '备货群二维码',
+  `stock_group_name`   varchar(100)  DEFAULT ''              COMMENT '备货群名称',
+  `stock_group_notice` varchar(500)  DEFAULT ''              COMMENT '备货群说明',
+  `order_num`          int(4)        DEFAULT 0               COMMENT '显示顺序',
+  `status`             char(1)       DEFAULT '0'             COMMENT '状态(0正常 1停用)',
+  `create_time`        datetime                               COMMENT '创建时间',
+  `update_time`        datetime                               COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_market_shop_status` (`shop_id`,`status`,`order_num`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='菜市场及备货群配置表';
+
+-- ----------------------------
+-- 4、菜品分类表（三级树）
 -- ----------------------------
 DROP TABLE IF EXISTS `kitchen_category`;
 CREATE TABLE `kitchen_category` (

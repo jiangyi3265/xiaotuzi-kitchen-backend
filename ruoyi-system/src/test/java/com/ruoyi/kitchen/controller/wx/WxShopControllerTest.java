@@ -27,7 +27,7 @@ class WxShopControllerTest
     {
         KitchenShop shop = new KitchenShop();
         shop.setBanner("/profile/new-banner.png");
-        when(kitchenShopService.getShop()).thenReturn(shop);
+        when(kitchenShopService.getPublicShop()).thenReturn(shop);
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         AjaxResult result = controller.info(response);

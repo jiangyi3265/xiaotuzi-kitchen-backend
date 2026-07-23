@@ -242,7 +242,8 @@ jobs:
             RuoYi-Vue/sql/kitchen_patch_20260717_profile_qr.sql \
             RuoYi-Vue/sql/kitchen_patch_20260718_business_integrity.sql \
             RuoYi-Vue/sql/kitchen_patch_20260721_share_auto_publish.sql \
-            RuoYi-Vue/sql/kitchen_patch_20260722_dynamic_categories.sql
+            RuoYi-Vue/sql/kitchen_patch_20260722_dynamic_categories.sql \
+            RuoYi-Vue/sql/kitchen_patch_20260722_market_list.sql
           do
             if [ -f "$sql" ]; then
               docker exec -i xiaotuzi-mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" ha' < "$sql"
@@ -278,6 +279,8 @@ jobs:
           test "$TODAY_COLUMN_COUNT" = "1"
           CATEGORY_AREA_COLUMN_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.columns where table_schema=database() and table_name=\"kitchen_category\" and column_name=\"display_area\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$CATEGORY_AREA_COLUMN_COUNT" = "1"
+          MARKET_TABLE_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from information_schema.tables where table_schema=database() and table_name=\"kitchen_market\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
+          test "$MARKET_TABLE_COUNT" = "1"
           LEGACY_TODAY_TYPE_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from kitchen_dish where today_type in (\"hotpot\",\"barbecue\")" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
           test "$LEGACY_TODAY_TYPE_COUNT" = "0"
           FEATURE_CONFIG_COUNT="$(docker exec xiaotuzi-mysql sh -c 'mysql -Nse "select count(*) from sys_config where config_key=\"wx.feature.enabled\"" -uroot -p"$MYSQL_ROOT_PASSWORD" ha')"
